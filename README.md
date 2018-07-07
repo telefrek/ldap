@@ -1,6 +1,8 @@
 # LDAP
 dotnet Core utility to talk to OpenLDAP
 
+[![Build Status](https://travis-ci.org/telefrek/ldap.svg?branch=alpha)](https://travis-ci.org/telefrek/ldap)
+
 # Local Setup
 
 Ensure you have docker setup and then run the following command prior to running tests:

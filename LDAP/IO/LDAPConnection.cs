@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Telefrek.Security.LDAP.Protocol.BER;
+using Telefrek.Security.LDAP.Protocol;
 
 namespace Telefrek.Security.LDAP.IO
 {
@@ -17,6 +17,7 @@ namespace Telefrek.Security.LDAP.IO
         TcpClient _conn;
         Stream _transport;
         Stream _raw;
+        int _messageId = 0;
 
         bool _sslEnabled;
 
@@ -44,13 +45,13 @@ namespace Telefrek.Security.LDAP.IO
                     // Try to send an ssl message
                     var ms = new MemoryStream();
 
-                    await BEREncoding.WriteAsync(ms, 1);
-                    await BEREncoding.WriteAsync(ms, 23, BERClass.APPLICATION);
-                    await BEREncoding.WriteAsync(ms, "1.3.6.1.4.1.1466.20037");
+                    await ProtocolEncoding.WriteAsync(ms, Interlocked.Increment(ref _messageId));
+                    await ProtocolEncoding.WriteAsync(ms, 23, EncodingScope.APPLICATION);
+                    await ProtocolEncoding.WriteAsync(ms, "1.3.6.1.4.1.1466.20037");
 
                     ms.Position = 0;
 
-                    await BEREncoding.WriteAsync(_raw, ms);
+                    await ProtocolEncoding.WriteAsync(_raw, ms);
 
                     _transport = new SslStream(_raw);
                     await (_transport as SslStream).AuthenticateAsClientAsync(host);
@@ -74,13 +75,37 @@ namespace Telefrek.Security.LDAP.IO
             // Finish the session
             var ms = new MemoryStream();
 
-            await BEREncoding.WriteAsync(ms, 1);
-            await BEREncoding.WriteAsync(ms, 2, BERClass.APPLICATION);
-            await BEREncoding.WriteNullAsync(ms);
+            await ProtocolEncoding.WriteAsync(ms, Interlocked.Increment(ref _messageId));
+            await ProtocolEncoding.WriteAsync(ms, 2, EncodingScope.APPLICATION);
+            await ProtocolEncoding.WriteNullAsync(ms);
 
             ms.Position = 0;
 
-            await BEREncoding.WriteAsync(_raw, ms);
+            await ProtocolEncoding.WriteAsync(_raw, ms);
+        }
+
+        public async Task<bool> TryLoginAsync(string user, string password)
+        {
+            var ms = new MemoryStream();
+
+            await ProtocolEncoding.WriteAsync(ms, Interlocked.Increment(ref _messageId));
+            await ProtocolEncoding.WriteAsync(ms, 0, EncodingScope.APPLICATION);
+            
+            var payload = new MemoryStream();
+
+            await ProtocolEncoding.WriteAsync(payload, 3);
+            await ProtocolEncoding.WriteAsync(payload, user);
+            await ProtocolEncoding.WriteAsync(payload, 0);
+            await ProtocolEncoding.WriteAsync(payload, password);
+
+            payload.Position = 0;
+
+            await ProtocolEncoding.WriteAsync(ms, payload);
+
+            ms.Position = 0;
+            await ProtocolEncoding.WriteAsync(_raw, ms);
+
+            return true;
         }
 
         bool _isDisposed = false;

@@ -1,9 +1,9 @@
-namespace Telefrek.Security.LDAP.Protocol.BER
+namespace Telefrek.Security.LDAP.Protocol
 {
     /// <summary>
-    /// Represents the types of BER classes
+    /// The scope of the encoding
     /// </summary>
-    public enum BERClass
+    public enum EncodingScope
     {
         /// <value>Valid for any ASN.1</value>
         UNIVERSAL = 0,

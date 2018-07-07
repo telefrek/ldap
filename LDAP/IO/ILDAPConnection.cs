@@ -7,5 +7,6 @@ namespace Telefrek.Security.LDAP.IO
     {
         Task ConnectAsync(string host, int port);
         Task CloseAsync();
+        Task<bool> TryLoginAsync(string user, string password);
     }
 }

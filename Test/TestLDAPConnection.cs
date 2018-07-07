@@ -18,7 +18,7 @@ namespace Telefrek.Security.LDAP.Test
                 var session = new LDAPSession(new LDAPOptions { Port = 10389, IsSecured = false, });
                 await session.OpenAsync();
 
-                Thread.Sleep(1000);
+                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
 
                 await session.Close();
             }

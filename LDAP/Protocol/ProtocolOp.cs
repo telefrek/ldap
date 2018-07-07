@@ -2,6 +2,7 @@ namespace Telefrek.Security.LDAP.Protocol
 {
     public enum ProtocolOp
     {
+        NONE = -1,
         BIND_REQUEST = 0,
         BIND_RESPONSE = 1,
         UNBIND_REQUEST = 2,

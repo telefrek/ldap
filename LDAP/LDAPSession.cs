@@ -15,10 +15,9 @@ namespace Telefrek.Security.LDAP
             _connection = new LDAPConnection(options.IsSecured);
         }
 
-        public async Task OpenAsync()
-        {
-            await _connection.ConnectAsync(_options.Host, _options.Port);
-        }
+        public async Task OpenAsync() => await _connection.ConnectAsync(_options.Host, _options.Port);
+
+        public async Task<bool> TryLoginAsync(string user, string password) => await _connection.TryLoginAsync(user, password);
 
         public async Task Close() 
         {

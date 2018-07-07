@@ -2,26 +2,28 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Telefrek.Security.LDAP.Protocol.BER
+namespace Telefrek.Security.LDAP.Protocol
 {
 
     /// <summary>
-    /// Encoding that reads/writes BER objects
+    /// Encoding  for LDAP customized BER
     /// </summary>
     /// <remarks>
     /// https://en.wikipedia.org/wiki/X.690#BER_encoding
     /// https://tools.ietf.org/rfc/rfc4511.txt (section 5.1)
+    /// https://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf
     /// </remarks>
-    public static class BEREncoding
+    public static class ProtocolEncoding
     {
+        #region Read Methods
         public static async Task<string> ReadStringAsync(Stream source)
         {
-            BERClass bCls;
-            BERType bType;
+            EncodingScope scope;
+            EncodingType encoding;
 
             // Check and validate the stream
-            GetDetails(source, out bType, out bCls);
-            if (bType == BERType.NULL)
+            GetDetails(source, out encoding, out scope);
+            if (encoding == EncodingType.NULL)
             {
                 // Validate the length
                 if (source.ReadByte() != 0)
@@ -30,7 +32,7 @@ namespace Telefrek.Security.LDAP.Protocol.BER
                 return null;
             }
 
-            bType.Guard(BERType.OCTET_STRING);
+            encoding.Guard(EncodingType.OCTET_STRING);
             var len = await getLengthAsync(source);
 
             if (len == 0)
@@ -44,12 +46,12 @@ namespace Telefrek.Security.LDAP.Protocol.BER
 
         public static async Task<int> ReadIntAsync(Stream source)
         {
-            BERClass bCls;
-            BERType bType;
+            EncodingScope scope;
+            EncodingType encoding;
 
             // Check and validate the stream
-            GetDetails(source, out bType, out bCls);
-            bType.Guard(BERType.INTEGER);
+            GetDetails(source, out encoding, out scope);
+            encoding.Guard(EncodingType.INTEGER);
             var len = await getLengthAsync(source);
 
             if (len == 0)
@@ -67,29 +69,29 @@ namespace Telefrek.Security.LDAP.Protocol.BER
 
         public static Task<bool> ReadBoolASync(Stream source)
         {
-            BERClass bCls;
-            BERType bType;
+            EncodingScope scope;
+            EncodingType encoding;
 
             // Check and validate the stream
-            GetDetails(source, out bType, out bCls);
-            bType.Guard(BERType.BOOLEAN);
+            GetDetails(source, out encoding, out scope);
+            encoding.Guard(EncodingType.BOOLEAN);
 
             // validate the length
             if (source.ReadByte() != 1)
                 throw new LDAPException("Boolean value had length != 1");
 
-            // Read for the true flag
-            return Task.FromResult(source.ReadByte() == 0xFF);
+            // Any non-zero is true per spec, though we use 0xFF explictly in writing
+            return Task.FromResult(source.ReadByte() > 0x0);
         }
 
         public static Task ReadNullAsync(Stream source)
         {
-            BERClass bCls;
-            BERType bType;
+            EncodingScope scope;
+            EncodingType encoding;
 
             // Check and validate the stream
-            GetDetails(source, out bType, out bCls);
-            bType.Guard(BERType.NULL);
+            GetDetails(source, out encoding, out scope);
+            encoding.Guard(EncodingType.NULL);
 
             // validate the null length
             if (source.ReadByte() != 0)
@@ -100,12 +102,12 @@ namespace Telefrek.Security.LDAP.Protocol.BER
 
         public static async Task<Stream> ReadStreamAsync(Stream source)
         {
-            BERClass bCls;
-            BERType bType;
+            EncodingScope scope;
+            EncodingType encoding;
 
             // Check and validate the stream
-            GetDetails(source, out bType, out bCls);
-            bType.Guard(BERType.SEQUENCE);
+            GetDetails(source, out encoding, out scope);
+            encoding.Guard(EncodingType.SEQUENCE);
 
             var rem = await getLengthAsync(source);
 
@@ -127,46 +129,61 @@ namespace Telefrek.Security.LDAP.Protocol.BER
             // Return a read only stream
             return new MemoryStream(buf, false);
         }
+        #endregion
 
-        public static async Task WriteNullAsync(Stream target, BERClass bCls = BERClass.UNIVERSAL)
+        #region Write Methods
+        public static async Task WriteNullAsync(Stream target, EncodingScope scope = EncodingScope.UNIVERSAL) => await WriteNullAsync(target, (int)EncodingType.NULL, (int)scope);
+
+        public static async Task WriteNullAsync(Stream target, int tag, int scope)
         {
-            await encodeTagAsync(target, BERType.NULL, true, bCls);
-            target.WriteByte(0x0);
+            await encodeTagAsync(target, tag, scope);
+            await encodeLengthAsync(target, 0);
         }
 
-        public static async Task WriteAsync(Stream target, Stream source, BERClass bCls = BERClass.UNIVERSAL)
+        public static async Task WriteAsync(Stream target, Stream source, EncodingType encoding = EncodingType.SEQUENCE,
+            EncodingScope scope = EncodingScope.UNIVERSAL) => await WriteAsync(target, source, (int)encoding, (int)scope);
+
+        public static async Task WriteAsync(Stream target, Stream source, int tag, int scope)
         {
-            await encodeTagAsync(target, BERType.SEQUENCE, false, bCls);
+            await encodeTagAsync(target, tag, scope, false);
             await encodeLengthAsync(target, (int)source.Length);
             await source.CopyToAsync(target);
         }
 
-        public static async Task WriteAsync(Stream target, bool value, BERClass bCls = BERClass.UNIVERSAL)
+        public static async Task WriteAsync(Stream target, bool value, EncodingScope scope = EncodingScope.UNIVERSAL) => await WriteAsync(target, value, (int)EncodingType.BOOLEAN, (int)scope);
+
+        public static async Task WriteAsync(Stream target, bool value, int tag, int scope)
         {
-            await encodeTagAsync(target, BERType.BOOLEAN, true, bCls);
+            await encodeTagAsync(target, tag, scope);
             await target.WriteAsync(new byte[] { 0x1, (byte)(value ? 0xFF : 0x0) }, 0, 2);
+
         }
 
-        public static async Task WriteAsync(Stream target, string value, BERClass bCls = BERClass.UNIVERSAL)
+        public static async Task WriteAsync(Stream target, string value, EncodingType encoding = EncodingType.OCTET_STRING, EncodingScope scope = EncodingScope.UNIVERSAL) => await WriteAsync(target, value, (int)encoding, (int)scope);
+
+        public static async Task WriteAsync(Stream target, string value, int tag, int scope)
         {
             if (string.IsNullOrEmpty(value))
             {
-                await WriteNullAsync(target);
+                await WriteNullAsync(target, tag, scope);
                 return;
             }
 
             var buffer = Encoding.UTF8.GetBytes(value);
 
             // Encode away!
-            await encodeTagAsync(target, BERType.OCTET_STRING, true, bCls);
+            await encodeTagAsync(target, tag, scope, true);
             await encodeLengthAsync(target, buffer.Length);
             await target.WriteAsync(buffer, 0, buffer.Length);
         }
 
-        public static async Task WriteAsync(Stream target, int value, BERClass bCls = BERClass.UNIVERSAL)
+        public static async Task WriteAsync(Stream target, int value, EncodingScope scope = EncodingScope.UNIVERSAL) => await WriteAsync(target, value, (int)EncodingType.INTEGER, (int)scope);
+
+        public static async Task WriteAsync(Stream target, int value, int tag, int scope)
         {
+
             // Write the tag
-            await encodeTagAsync(target, BERType.INTEGER, true, bCls);
+            await encodeTagAsync(target, tag, scope);
 
             // Calculate the bits required to write this value
             var bits = value.MSB() + 1;
@@ -208,11 +225,13 @@ namespace Telefrek.Security.LDAP.Protocol.BER
                 await target.WriteAsync(contents, 0, idx);
             }
         }
+        #endregion
 
-        static void GetDetails(Stream source, out BERType bType, out BERClass bCls)
+        #region Internal methods
+        static void GetDetails(Stream source, out EncodingType encoding, out EncodingScope scope)
         {
             var b = source.ReadByte();
-            bCls = (BERClass)(b >> 6);
+            scope = (EncodingScope)(b >> 6);
 
             // Check for overflow
             if ((b & 0x1F) == (0x1F))
@@ -227,10 +246,10 @@ namespace Telefrek.Security.LDAP.Protocol.BER
                     if ((b & 0x80) == 0)
                         break;
                 }
-                bType = (BERType)t;
+                encoding = (EncodingType)t;
             }
             else
-                bType = (BERType)(b & 0x1F);
+                encoding = (EncodingType)(b & 0x1F);
         }
 
         static async Task<int> getLengthAsync(Stream source)
@@ -296,12 +315,11 @@ namespace Telefrek.Security.LDAP.Protocol.BER
             }
         }
 
-        static async Task encodeTagAsync(Stream target, BERType bType, bool isPrimitive = true, BERClass bClass = BERClass.UNIVERSAL)
+        static async Task encodeTagAsync(Stream target, int tag, int scope, bool isPrimitive = true)
         {
             // Create the tag header
-            var header = ((int)bClass << 6);
+            var header = scope << 6;
             header |= (isPrimitive ? 0 : 1) << 5;
-            var tag = (int)bType;
 
             // Safe to write entire tag
             if (tag < 31)
@@ -336,6 +354,7 @@ namespace Telefrek.Security.LDAP.Protocol.BER
                 await target.WriteAsync(contents, 0, idx);
             }
         }
+        #endregion
 
         #region MSB/LSB (Most/Least Significant Bit/Log Base 2)
 
@@ -362,7 +381,12 @@ namespace Telefrek.Security.LDAP.Protocol.BER
         }
         #endregion
 
-        static void Guard(this BERType typeToken, BERType expected)
+        /// <summary>
+        /// Extension method to ensure token types match
+        /// </summary>
+        /// <param name="typeToken">The current token</param>
+        /// <param name="expected">The required type</param>
+        static void Guard(this EncodingType typeToken, EncodingType expected)
         {
             if (typeToken != expected)
                 throw new LDAPException("Invalid token in stream");

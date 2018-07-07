@@ -1,11 +1,11 @@
-namespace Telefrek.Security.LDAP.Protocol.BER
+namespace Telefrek.Security.LDAP.Protocol
 {
     /// <summary>
-    /// BER Encoding types
+    /// Type of value being encoded
     /// </summary>
-    public enum BERType
+    public enum EncodingType
     {
-        /// <value>End of contents</value>
+         /// <value>End of contents</value>
         END_OF_CONTENT = 0x0,
         /// <value>Boolean value</value>
         BOOLEAN = 0x1,

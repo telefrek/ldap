@@ -9,5 +9,7 @@ namespace Telefrek.Security.LDAP.IO
         Task ConnectAsync(string host, int port);
         Task CloseAsync();
         Task<bool> TryQueueOperation(ProtocolOperation op);
+        LDAPReader Reader { get; }
+        LDAPWriter Writer { get; }
     }
 }

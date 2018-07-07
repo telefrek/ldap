@@ -133,7 +133,7 @@ namespace Telefrek.Security.LDAP.Protocol
         /// Reads the next token as a boolean value
         /// </summary>
         /// <returns>The next token as a bool</returns>
-        public Task<bool> ReadAsBoolean()
+        public Task<bool> ReadAsBooleanAsync()
         {
             if(Length != 1)
                 throw new LDAPProtocolException("Corrupted stream");
@@ -154,7 +154,7 @@ namespace Telefrek.Security.LDAP.Protocol
         /// Reads the next token from the stream as an int32 value
         /// </summary>
         /// <returns>The next token as an int32</returns>
-        public async Task<int> ReadAsInt()
+        public async Task<int> ReadAsIntAsync()
         {
             var buffer = new byte[Length];
             await _source.ReadAsync(buffer, 0, Length);
@@ -170,7 +170,7 @@ namespace Telefrek.Security.LDAP.Protocol
         /// Reads the next token as a UTF-8 string
         /// </summary>
         /// <returns>The next token as a string</returns>
-        public async Task<string> ReadAsString()
+        public async Task<string> ReadAsStringAsync()
         {
             var buffer = new byte[Length];
             await _source.ReadAsync(buffer, 0, Length);
@@ -181,7 +181,7 @@ namespace Telefrek.Security.LDAP.Protocol
         /// <summary>
         /// Skips the current token in the stream
         /// </summary>
-        public async Task Skip()
+        public async Task SkipAsync()
         {
             // Seek if possible
             if (_source.CanSeek)

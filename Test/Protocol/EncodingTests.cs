@@ -15,7 +15,7 @@ namespace Telefrek.Security.LDAP.Protocol.Test
             // Write an int
             using (var ms = new MemoryStream())
             {
-                await ProtocolEncoding.WriteAsync(ms, 1);
+                await new LDAPWriter(ms).WriteAsync(1);
 
                 var bytes = ms.ToArray();
                 Assert.AreEqual(3, bytes.Length, "Invalid number of bytes written");
@@ -27,8 +27,9 @@ namespace Telefrek.Security.LDAP.Protocol.Test
             // Write a bool
             using (var ms = new MemoryStream())
             {
-                await ProtocolEncoding.WriteAsync(ms, false);
-                await ProtocolEncoding.WriteAsync(ms, true);
+                var writer = new LDAPWriter(ms);
+                await writer.WriteAsync(false);
+                await writer.WriteAsync(true);
 
                 var bytes = ms.ToArray();
                 Assert.AreEqual(6, bytes.Length, "Invalid number of bytes written");
@@ -44,7 +45,7 @@ namespace Telefrek.Security.LDAP.Protocol.Test
             // Write a null
             using (var ms = new MemoryStream())
             {
-                await ProtocolEncoding.WriteNullAsync(ms);
+                await new LDAPWriter(ms).WriteNullAsync();
 
                 var bytes = ms.ToArray();
                 Assert.AreEqual(2, bytes.Length, "Invalid number of bytes written");
@@ -55,7 +56,7 @@ namespace Telefrek.Security.LDAP.Protocol.Test
             // Write a string
             using (var ms = new MemoryStream())
             {
-                await ProtocolEncoding.WriteAsync(ms, "Hello");
+                await new LDAPWriter(ms).WriteAsync("Hello");
 
                 var bytes = ms.ToArray();
                 Assert.AreEqual(7, bytes.Length, "Invalid number of bytes written");
@@ -70,7 +71,7 @@ namespace Telefrek.Security.LDAP.Protocol.Test
             // Write a string
             using (var ms = new MemoryStream())
             {
-                await ProtocolEncoding.WriteAsync(ms, "Hello");
+                await new LDAPWriter(ms).WriteAsync("Hello");
 
                 var bytes = ms.ToArray();
                 Assert.AreEqual(7, bytes.Length, "Invalid number of bytes written");
@@ -79,62 +80,15 @@ namespace Telefrek.Security.LDAP.Protocol.Test
 
                 ms.Position = 0;
 
-                var value = await ProtocolEncoding.ReadStringAsync(ms);
+                var reader = new LDAPReader(ms);
+                Assert.IsTrue(await reader.ReadAsync(), "Reader has no data");
+                Assert.AreEqual((int)EncodingType.OCTET_STRING, reader.Tag, "Invalid tag");
+                Assert.AreEqual(EncodingScope.UNIVERSAL, reader.Scope, "Invalid scope");
+                Assert.AreEqual(5, reader.Length, "Invalid length");
+                var value = await reader.ReadAsStringAsync();
+
                 Assert.IsNotNull(value, "String should not be null");
                 Assert.AreEqual("Hello", value, "Wrong value returned from reader");
-            }
-        }
-
-        [TestMethod]
-        public async Task TestIntReadWrite()
-        {
-            // Write an int
-            using (var ms = new MemoryStream())
-            {
-                await ProtocolEncoding.WriteAsync(ms, 1);
-
-                var bytes = ms.ToArray();
-                Assert.AreEqual(3, bytes.Length, "Invalid number of bytes written");
-                Assert.AreEqual((int)EncodingType.INTEGER, bytes[0], "Wrong tag value");
-                Assert.AreEqual(1, bytes[1], "Wrong length value");
-                Assert.AreEqual(1, bytes[2], "Wrong value encoded");
-
-                ms.Position = 0;
-
-                var val = await ProtocolEncoding.ReadIntAsync(ms);
-                Assert.AreEqual(1, val, "Read incorrect value");
-            }
-
-            // Write a failover int
-            using (var ms = new MemoryStream())
-            {
-                await ProtocolEncoding.WriteAsync(ms, 257);
-
-                var bytes = ms.ToArray();
-                Assert.AreEqual(4, bytes.Length, "Invalid number of bytes written");
-                Assert.AreEqual((int)EncodingType.INTEGER, bytes[0], "Wrong tag value");
-                Assert.AreEqual(2, bytes[1], "Wrong length value");
-
-                ms.Position = 0;
-
-                var val = await ProtocolEncoding.ReadIntAsync(ms);
-                Assert.AreEqual(257, val, "Read incorrect value");
-            }
-
-            // Write a big int
-            using (var ms = new MemoryStream())
-            {
-                await ProtocolEncoding.WriteAsync(ms, 1234567);
-
-                var bytes = ms.ToArray();
-                Assert.AreEqual(5, bytes.Length, "Invalid number of bytes written");
-                Assert.AreEqual((int)EncodingType.INTEGER, bytes[0], "Wrong tag value");
-                Assert.AreEqual(3, bytes[1], "Wrong length value");
-
-                ms.Position = 0;
-
-                var val = await ProtocolEncoding.ReadIntAsync(ms);
-                Assert.AreEqual(1234567, val, "Read incorrect value");
             }
         }
     }

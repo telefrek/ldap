@@ -4,13 +4,7 @@ using System.Threading.Tasks;
 namespace Telefrek.Security.LDAP.Protocol
 {
     /// <summary>
-    ///  Performs a bind request against an LDAP server
-    /// 
-    ///  BindRequest ::= [APPLICATION 0] SEQUENCE {
-    ///  version                 INTEGER (1 ..  127),
-    ///  name                    LDAPDN,
-    ///  authentication          AuthenticationChoice }
-    /// 
+    ///  Performs a bind request against an LDAP server to login with specific credentials
     /// </summary>
     internal class BindRequest : ProtocolOperation
     {
@@ -20,41 +14,36 @@ namespace Telefrek.Security.LDAP.Protocol
         public string Name { get; set; }
         public AuthenticationChoice Authentication { get; set; }
 
-        protected override async Task WriteContentsAsync(Stream target)
+        protected override async Task WriteContentsAsync(LDAPWriter writer)
         {
-            var ms = new MemoryStream();
+            var opWriter = new LDAPWriter(new MemoryStream());
 
-            await ProtocolEncoding.WriteAsync(ms, Version);
-            await ProtocolEncoding.WriteAsync(ms, Name);
-            await Authentication.WriteAsync(ms);
+            await opWriter.WriteAsync(Version);
+            await opWriter.WriteAsync(Name);
 
-            ms.Seek(0, SeekOrigin.Begin);
-            await ProtocolEncoding.WriteAsync(target, ms, 0, (int)EncodingScope.APPLICATION);
+            await Authentication.WriteAsync(opWriter);
+
+            await writer.WriteAsync(opWriter, 0, EncodingScope.APPLICATION);
         }
     }
 
     /// <summary>
     /// Authentication choice used for identifying the user
-    /// 
-    /// AuthenticationChoice ::= CHOICE {
-    /// simple                  [0] OCTET STRING,
-    ///                         -- 1 and 2 reserved
-    /// sasl                    [3] SaslCredentials,
-    /// ...  }
     /// </summary>
     internal abstract class AuthenticationChoice
     {
-        public abstract Task WriteAsync(Stream target);
+        public abstract Task WriteAsync(LDAPWriter writer);
     }
 
+    /// <summary>
+    /// Simple authentication mechanism using plaintext username/password
+    /// </summary>
     internal class SimpleAuthentication : AuthenticationChoice
     {
         public string Credentials { get; set; }
 
-        public override async Task WriteAsync(Stream target)
-        {
+        public override async Task WriteAsync(LDAPWriter writer) =>
             // Tag for simple is 0
-            await ProtocolEncoding.WriteAsync(target, Credentials, 0, (int)EncodingScope.CONTEXT_SPECIFIC);
-        }
+            await writer.WriteAsync(Credentials, 0, EncodingScope.CONTEXT_SPECIFIC);
     }
 }

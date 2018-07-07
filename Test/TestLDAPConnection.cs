@@ -28,5 +28,24 @@ namespace Telefrek.Security.LDAP.Test
                 Assert.Fail("Unhandled exception");
             }
         }
+
+        [TestMethod]
+        public async Task TestSSLConnection()
+        {
+            try
+            {
+                var session = new LDAPSession(new LDAPOptions { Port = 10636, IsSecured = true, });
+                await session.OpenAsync();
+
+                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
+
+                await session.Close();
+            }
+            catch (LDAPException ldapEx)
+            {
+                TestContext.WriteLine("Invalid exception : {0}", ldapEx);
+                Assert.Fail("Unhandled exception");
+            }
+        }
     }
 }

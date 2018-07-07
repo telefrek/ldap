@@ -26,7 +26,7 @@ namespace Telefrek.Security.LDAP.Protocol
                 GetDetails(source, out tag, out scope, out isPrimitive);
 
                 Console.WriteLine("scope: {0}, tag: {1}, prim: {2}", scope, tag, isPrimitive);
-                var len = await getLengthAsync(source);
+                var len = await ReadLengthAsync(source);
                 Console.WriteLine("len: {0}", len);
                 source.Seek(len, SeekOrigin.Current);
             }
@@ -46,16 +46,16 @@ namespace Telefrek.Security.LDAP.Protocol
             {
                 // Validate the length
                 if (source.ReadByte() != 0)
-                    throw new LDAPException("Corrupted stream detected");
+                    throw new LDAPProtocolException("Corrupted stream detected");
 
                 return null;
             }
 
             encoding.Guard(EncodingType.OCTET_STRING);
-            var len = await getLengthAsync(source);
+            var len = await ReadLengthAsync(source);
 
             if (len == 0)
-                throw new LDAPException("Length was 0 for non-null string");
+                throw new LDAPProtocolException("Length was 0 for non-null string");
 
             var buffer = new byte[len];
             await source.ReadAsync(buffer, 0, len);
@@ -71,10 +71,10 @@ namespace Telefrek.Security.LDAP.Protocol
             // Check and validate the stream
             GetDetails(source, out encoding, out scope);
             encoding.Guard(EncodingType.INTEGER);
-            var len = await getLengthAsync(source);
+            var len = await ReadLengthAsync(source);
 
             if (len == 0)
-                throw new LDAPException("Length was 0 for a numeric value");
+                throw new LDAPProtocolException("Length was 0 for a numeric value");
 
             var buffer = new byte[len];
             await source.ReadAsync(buffer, 0, len);
@@ -97,7 +97,7 @@ namespace Telefrek.Security.LDAP.Protocol
 
             // validate the length
             if (source.ReadByte() != 1)
-                throw new LDAPException("Boolean value had length != 1");
+                throw new LDAPProtocolException("Boolean value had length != 1");
 
             // Any non-zero is true per spec, though we use 0xFF explictly in writing
             return Task.FromResult(source.ReadByte() > 0x0);
@@ -114,7 +114,7 @@ namespace Telefrek.Security.LDAP.Protocol
 
             // validate the null length
             if (source.ReadByte() != 0)
-                throw new LDAPException("Null value read with non-zero length");
+                throw new LDAPProtocolException("Null value read with non-zero length");
 
             return Task.CompletedTask;
         }
@@ -128,7 +128,7 @@ namespace Telefrek.Security.LDAP.Protocol
             GetDetails(source, out encoding, out scope);
             encoding.Guard(EncodingType.SEQUENCE);
 
-            var rem = await getLengthAsync(source);
+            var rem = await ReadLengthAsync(source);
 
             if (rem == 0)
                 return new MemoryStream();
@@ -141,7 +141,7 @@ namespace Telefrek.Security.LDAP.Protocol
             {
                 var n = await source.ReadAsync(buf, numRead, rem - numRead);
                 if (n < 0)
-                    throw new LDAPException("Stream closed before read completed");
+                    throw new LDAPProtocolException("Stream closed before read completed");
                 numRead += n;
             }
 
@@ -296,7 +296,7 @@ namespace Telefrek.Security.LDAP.Protocol
                 tag = b & 0x1F;
         }
 
-        static async Task<int> getLengthAsync(Stream source)
+        static async Task<int> ReadLengthAsync(Stream source)
         {
             // Detect if we have a small byte
             var b = source.ReadByte();
@@ -313,7 +313,7 @@ namespace Telefrek.Security.LDAP.Protocol
             {
                 var numRead = await source.ReadAsync(contents, idx, numBytes);
                 if (numRead == -1)
-                    throw new LDAPException("Stream disconnected before read finished");
+                    throw new LDAPProtocolException("Stream disconnected before read finished");
                 numBytes -= numRead;
                 idx += numRead;
             } while (numBytes > 0);
@@ -433,7 +433,7 @@ namespace Telefrek.Security.LDAP.Protocol
         static void Guard(this EncodingType typeToken, EncodingType expected)
         {
             if (typeToken != expected)
-                throw new LDAPException("Invalid token in stream");
+                throw new LDAPProtocolException("Invalid token in stream");
         }
     }
 }

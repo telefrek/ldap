@@ -16,11 +16,11 @@ namespace Telefrek.Security.LDAP.Test
             try
             {
                 var session = new LDAPSession(new LDAPOptions { Port = 10389, IsSecured = false, });
-                await session.OpenAsync();
+                await session.StartAsync();
 
                 var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
 
-                await session.Close();
+                await session.CloseAsync();
             }
             catch (LDAPException ldapEx)
             {
@@ -35,11 +35,11 @@ namespace Telefrek.Security.LDAP.Test
             try
             {
                 var session = new LDAPSession(new LDAPOptions { Port = 10636, IsSecured = true, });
-                await session.OpenAsync();
+                await session.StartAsync();
 
                 var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
 
-                await session.Close();
+                await session.CloseAsync();
             }
             catch (LDAPException ldapEx)
             {

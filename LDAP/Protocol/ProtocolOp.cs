@@ -1,8 +1,10 @@
 namespace Telefrek.Security.LDAP.Protocol
 {
-    public enum ProtocolOp
+    /// <summary>
+    /// This is the full list of supported operations
+    /// </summary>
+    internal enum ProtocolOp
     {
-        NONE = -1,
         BIND_REQUEST = 0,
         BIND_RESPONSE = 1,
         UNBIND_REQUEST = 2,

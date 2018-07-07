@@ -25,6 +25,7 @@ namespace Telefrek.Security.LDAP.Protocol
 
             // Move the stream back to the beginning for writes
             ms.Seek(0, SeekOrigin.Begin);
+            
             await ProtocolEncoding.WriteAsync(target, ms, EncodingType.SEQUENCE, EncodingScope.UNIVERSAL);
         }
 

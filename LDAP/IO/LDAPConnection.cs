@@ -12,7 +12,7 @@ namespace Telefrek.Security.LDAP.IO
     /// <summary>
     /// Class for handling the protocol level communications
     /// </summary>
-    public class LDAPConnection : ILDAPConnection
+    internal class LDAPConnection : ILDAPConnection
     {
         TcpClient _conn;
         Stream _transport;
@@ -84,29 +84,6 @@ namespace Telefrek.Security.LDAP.IO
             await ProtocolEncoding.WriteAsync(_raw, ms);
         }
 
-        public async Task<bool> TryLoginAsync(string user, string password)
-        {
-            var ms = new MemoryStream();
-
-            await ProtocolEncoding.WriteAsync(ms, Interlocked.Increment(ref _messageId));
-            await ProtocolEncoding.WriteAsync(ms, 0, EncodingScope.APPLICATION);
-            
-            var payload = new MemoryStream();
-
-            await ProtocolEncoding.WriteAsync(payload, 3);
-            await ProtocolEncoding.WriteAsync(payload, user);
-            await ProtocolEncoding.WriteAsync(payload, 0);
-            await ProtocolEncoding.WriteAsync(payload, password);
-
-            payload.Position = 0;
-
-            await ProtocolEncoding.WriteAsync(ms, payload);
-
-            ms.Position = 0;
-            await ProtocolEncoding.WriteAsync(_raw, ms);
-
-            return true;
-        }
 
         bool _isDisposed = false;
 
@@ -134,6 +111,12 @@ namespace Telefrek.Security.LDAP.IO
         }
 
         public void Dispose() => Dispose(true);
+
+        public async Task<bool> TryQueueOperation(ProtocolOperation op)
+        {
+            await op.WriteAsync(_raw);
+            return true;
+        }
 
         ~LDAPConnection() => Dispose(false);
     }

@@ -29,7 +29,7 @@ namespace Telefrek.Security.LDAP.Protocol
             await Authentication.WriteAsync(ms);
 
             ms.Seek(0, SeekOrigin.Begin);
-            await ProtocolEncoding.WriteAsync(target, ms, (EncodingType)3, EncodingScope.APPLICATION);
+            await ProtocolEncoding.WriteAsync(target, ms, 0, (int)EncodingScope.APPLICATION);
         }
     }
 
@@ -54,7 +54,7 @@ namespace Telefrek.Security.LDAP.Protocol
         public override async Task WriteAsync(Stream target)
         {
             // Tag for simple is 0
-            await ProtocolEncoding.WriteAsync(target, Credentials, (EncodingType)0);
+            await ProtocolEncoding.WriteAsync(target, Credentials, 0, (int)EncodingScope.CONTEXT_SPECIFIC);
         }
     }
 }

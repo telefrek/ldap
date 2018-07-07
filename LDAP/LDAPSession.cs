@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Telefrek.Security.LDAP.IO;
+using Telefrek.Security.LDAP.Protocol;
 
 namespace Telefrek.Security.LDAP
 {
@@ -17,9 +18,13 @@ namespace Telefrek.Security.LDAP
 
         public async Task OpenAsync() => await _connection.ConnectAsync(_options.Host, _options.Port);
 
-        public async Task<bool> TryLoginAsync(string user, string password) => await _connection.TryLoginAsync(user, password);
+        public async Task<bool> TryLoginAsync(string user, string password)
+        {
+            var op = new BindRequest { Name = user, Authentication = new SimpleAuthentication { Credentials = password } };
+            return await _connection.TryQueueOperation(op);
+        }
 
-        public async Task Close() 
+        public async Task Close()
         {
             await _connection.CloseAsync();
             Dispose();
@@ -32,8 +37,8 @@ namespace Telefrek.Security.LDAP
             if (disposing && !_isDisposed)
             {
                 // Clear resources
-                using(_connection);
-                
+                using (_connection) ;
+
                 // Notify GC to ignore
                 GC.SuppressFinalize(this);
             }

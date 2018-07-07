@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,24 @@ namespace Telefrek.Security.LDAP.Protocol
     /// </remarks>
     public static class ProtocolEncoding
     {
+        public static async Task Validate(Stream source)
+        {
+            int tag, scope;
+            bool isPrimitive;
+
+            while (source.Position < source.Length)
+            {
+                GetDetails(source, out tag, out scope, out isPrimitive);
+
+                Console.WriteLine("scope: {0}, tag: {1}, prim: {2}", scope, tag, isPrimitive);
+                var len = await getLengthAsync(source);
+                Console.WriteLine("len: {0}", len);
+                source.Seek(len, SeekOrigin.Current);
+            }
+
+
+        }
+
         #region Read Methods
         public static async Task<string> ReadStringAsync(Stream source)
         {
@@ -250,6 +269,31 @@ namespace Telefrek.Security.LDAP.Protocol
             }
             else
                 encoding = (EncodingType)(b & 0x1F);
+        }
+
+        static void GetDetails(Stream source, out int tag, out int scope, out bool isPrimitive)
+        {
+            var b = source.ReadByte();
+            scope = b >> 6;
+
+            isPrimitive = (b & 0x20) == 0;
+
+            // Check for overflow
+            if ((b & 0x1F) == (0x1F))
+            {
+                tag = 0;
+                for (var i = 0; i < 8; ++i)
+                {
+                    b = source.ReadByte();
+                    tag = (tag << 7) | (b & 0x7F);
+
+                    // Check if we need to read more
+                    if ((b & 0x80) == 0)
+                        break;
+                }
+            }
+            else
+                tag = b & 0x1F;
         }
 
         static async Task<int> getLengthAsync(Stream source)

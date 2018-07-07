@@ -1,12 +1,13 @@
 using System;
 using System.Threading.Tasks;
+using Telefrek.Security.LDAP.Protocol;
 
 namespace Telefrek.Security.LDAP.IO
 {
-    public interface ILDAPConnection : IDisposable
+    internal interface ILDAPConnection : IDisposable
     {
         Task ConnectAsync(string host, int port);
         Task CloseAsync();
-        Task<bool> TryLoginAsync(string user, string password);
+        Task<bool> TryQueueOperation(ProtocolOperation op);
     }
 }

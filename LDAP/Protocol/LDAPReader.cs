@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Telefrek.Security.LDAP.IO;
@@ -31,6 +32,16 @@ namespace Telefrek.Security.LDAP.Protocol
         /// Gets the current scope for the reader
         /// </summary>
         public EncodingScope Scope { get; private set; }
+
+        /// <summary>
+        /// Gets a flag to indicate if there is more data available
+        /// </summary>
+        public bool HasData { get { return _source is NetworkStream ? (_source as NetworkStream).DataAvailable : _source.Position < _source.Length; } }
+
+        /// <summary>
+        /// Gets a flag to indicate if the reader is completed
+        /// </summary>
+        public bool IsComplete { get { return _source is NetworkStream ? false : _source.Position >= _source.Length; } }
 
         /// <summary>
         /// Gets the primitive flag for the reader
@@ -135,16 +146,16 @@ namespace Telefrek.Security.LDAP.Protocol
         /// <returns>The next token as a bool</returns>
         public Task<bool> ReadAsBooleanAsync()
         {
-            if(Length != 1)
+            if (Length != 1)
                 throw new LDAPProtocolException("Corrupted stream");
 
             var b = _source.ReadByte();
 
-            if(b < 0)
+            if (b < 0)
                 throw new LDAPProtocolException("Stream ended before value could be read");
-            if(b == 0)
+            if (b == 0)
                 return Task.FromResult(false);
-            if(b == 0xFF)
+            if (b == 0xFF)
                 return Task.FromResult(true);
 
             throw new LDAPProtocolException("Invalid boolean value received");
@@ -173,7 +184,8 @@ namespace Telefrek.Security.LDAP.Protocol
         public async Task<string> ReadAsStringAsync()
         {
             var buffer = new byte[Length];
-            await _source.ReadAsync(buffer, 0, Length);
+            if (Length > 0)
+                await _source.ReadAsync(buffer, 0, Length);
 
             return Encoding.UTF8.GetString(buffer);
         }

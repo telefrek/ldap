@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -25,25 +26,9 @@ namespace Telefrek.Security.LDAP.Protocol
 
             await writer.WriteAsync(opWriter, 0, EncodingScope.APPLICATION);
         }
-    }
 
-    /// <summary>
-    /// Authentication choice used for identifying the user
-    /// </summary>
-    internal abstract class AuthenticationChoice
-    {
-        public abstract Task WriteAsync(LDAPWriter writer);
-    }
-
-    /// <summary>
-    /// Simple authentication mechanism using plaintext username/password
-    /// </summary>
-    internal class SimpleAuthentication : AuthenticationChoice
-    {
-        public string Credentials { get; set; }
-
-        public override async Task WriteAsync(LDAPWriter writer) =>
-            // Tag for simple is 0
-            await writer.WriteAsync(Credentials, 0, EncodingScope.CONTEXT_SPECIFIC);
+        protected override async Task ReadContentsAsync(LDAPReader reader) =>
+            // Can't do this....
+            throw new InvalidOperationException("Cannot read a request");
     }
 }

@@ -19,9 +19,9 @@ namespace Telefrek.Security.LDAP.IO
         TcpClient _conn;
         Stream _transport;
         Stream _raw;
+        MessagePump _pump;
         int _messageId = 0;
         bool _sslEnabled;
-
 
         /// <summary>
         /// Internal constructor used to establish streams
@@ -34,6 +34,11 @@ namespace Telefrek.Security.LDAP.IO
             _transport = null;
         }
 
+        /// <summary>
+        /// Connect to the given host on the port asynchronously
+        /// </summary>
+        /// <param name="host">The host to connect to</param>
+        /// <param name="port">The port to use for communication</param>
         public async Task ConnectAsync(string host, int port)
         {
             try
@@ -71,6 +76,10 @@ namespace Telefrek.Security.LDAP.IO
                     Reader = new LDAPReader(_raw);
                     Writer = new LDAPWriter(_raw);
                 }
+
+                // Create the pump and start it
+                _pump = new MessagePump(Reader);
+                _pump.Start();
             }
             catch (Exception e)
             {
@@ -78,7 +87,70 @@ namespace Telefrek.Security.LDAP.IO
             }
         }
 
-        public async Task CloseAsync() => await TryQueueOperation(new UnbindRequest());
+        public async Task CloseAsync()
+        {
+            await TryQueueOperation(new UnbindRequest());
+            await _pump.StopAsync();
+        }
+
+        public async Task<bool> TryQueueOperation(ProtocolOperation op)
+        {
+            if(op.HasResponse)
+                return await TryQueueResponseOperation(op);
+
+            await op.WriteAsync(Writer);
+
+            return true;
+        }
+
+        async Task<bool> TryQueueResponseOperation(ProtocolOperation op)
+        {
+            // This is significantly uglier...gonna bleed connections all over the place
+            var a = new AutoResetEvent(false);
+
+            MessagePump.MessageAvailableHandler h = (o, m) =>
+            {
+                if (m.MessageId == op.MessageId)
+                    a.Set();
+            };
+
+            _pump.MessageAvailable += h;
+
+            try
+            {
+                await op.WriteAsync(Writer).ContinueWith((t) =>
+                {
+                    while (!a.WaitOne(1000))
+                        if (t.IsCanceled) return;
+                });
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            finally
+            {
+                _pump.MessageAvailable -= h;
+            }
+
+            return true;
+
+        }
+
+        /// <summary>
+        /// Gets the connection reader
+        /// </summary>
+        public LDAPReader Reader { get; private set; }
+
+        /// <summary>
+        /// Gets the connection writer
+        /// </summary>
+        public LDAPWriter Writer { get; private set; }
+
+        /// <summary>
+        /// Dispose of all connection resources
+        /// </summary>
+        public void Dispose() => Dispose(true);
 
         bool _isDisposed = false;
 
@@ -110,17 +182,6 @@ namespace Telefrek.Security.LDAP.IO
 
             _isDisposed = true;
         }
-
-        public void Dispose() => Dispose(true);
-
-        public async Task<bool> TryQueueOperation(ProtocolOperation op)
-        {
-            await op.WriteAsync(Writer);
-            return true;
-        }
-
-        public LDAPReader Reader { get; private set; }
-        public LDAPWriter Writer { get; private set; }
 
         ~LDAPConnection() => Dispose(false);
     }

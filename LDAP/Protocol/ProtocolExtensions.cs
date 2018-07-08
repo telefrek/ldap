@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+
 namespace Telefrek.Security.LDAP.Protocol
 {
     /// <summary>
@@ -5,6 +7,20 @@ namespace Telefrek.Security.LDAP.Protocol
     /// </summary>
     public static class ProtocolExtensions
     {
+        /// <summary>
+        /// Ensure the reader has additional contents
+        /// </summary>
+        /// <param name="reader">The reader to test</param>
+        /// <param name="tag">The tag to check</param>
+        public static async Task GuardAsync(this LDAPReader reader, int tag)
+        {
+            if (!await reader.ReadAsync())
+                throw new LDAPProtocolException("Invalid response object");
+
+            if (reader.Tag != tag)
+                throw new LDAPProtocolException(string.Format("Invalid tag : {0} (expected {1})", reader.Tag, tag));
+        }
+
         #region MSB/LSB (Most/Least Significant Bit/Log Base 2)
 
         static int[] MSBDeBruijnLookup = new int[]

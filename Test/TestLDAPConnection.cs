@@ -11,6 +11,7 @@ namespace Telefrek.Security.LDAP.Test
         public TestContext TestContext { get; set; }
 
         [TestMethod]
+        [Timeout(5000)]
         public async Task TestConnection()
         {
             try
@@ -30,6 +31,7 @@ namespace Telefrek.Security.LDAP.Test
         }
 
         [TestMethod]
+        [Timeout(5000)]
         public async Task TestSSLConnection()
         {
             try

@@ -95,7 +95,7 @@ namespace Telefrek.Security.LDAP.IO
 
         public async Task<bool> TryQueueOperation(ProtocolOperation op)
         {
-            if(op.HasResponse)
+            if (op.HasResponse)
                 return await TryQueueResponseOperation(op);
 
             await op.WriteAsync(Writer);
@@ -103,38 +103,23 @@ namespace Telefrek.Security.LDAP.IO
             return true;
         }
 
-        async Task<bool> TryQueueResponseOperation(ProtocolOperation op)
+        async Task<bool> TryQueueResponseOperation(ProtocolOperation op, CancellationToken token = default(CancellationToken))
         {
-            // This is significantly uglier...gonna bleed connections all over the place
-            var a = new AutoResetEvent(false);
-
-            MessagePump.MessageAvailableHandler h = (o, m) =>
-            {
-                if (m.MessageId == op.MessageId)
-                    a.Set();
-            };
-
-            _pump.MessageAvailable += h;
+            var response = _pump.GetResponse(op.MessageId, token);
 
             try
             {
-                await op.WriteAsync(Writer).ContinueWith((t) =>
-                {
-                    while (!a.WaitOne(1000))
-                        if (t.IsCanceled) return;
-                });
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-            finally
-            {
-                _pump.MessageAvailable -= h;
-            }
+                await op.WriteAsync(Writer);
+                var msg = await response;
 
-            return true;
-
+                var bindRes = msg as BindResponse;
+                if (bindRes != null)
+                    return bindRes.ResultCode == 0;
+            }
+            catch (AggregateException)
+            {
+            }
+            return false;
         }
 
         /// <summary>

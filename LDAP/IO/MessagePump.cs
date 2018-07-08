@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Telefrek.Security.LDAP.Protocol;
 
@@ -13,6 +15,9 @@ namespace Telefrek.Security.LDAP.IO
         Task _pumpThread;
         LDAPReader _reader;
         NetworkStream _raw;
+
+        ConcurrentDictionary<int, TaskCompletionSource<ProtocolOperation>> _completions =
+            new ConcurrentDictionary<int, TaskCompletionSource<ProtocolOperation>>();
 
         volatile bool _isClosed = false;
 
@@ -49,11 +54,34 @@ namespace Telefrek.Security.LDAP.IO
             await _pumpThread;
         }
 
+        public Task<ProtocolOperation> GetResponse(int messageId, CancellationToken token = default(CancellationToken))
+        {
+            // Create the source and register the cancellation token if supplied
+            var tcs = new TaskCompletionSource<ProtocolOperation>(TaskCreationOptions.AttachedToParent | TaskCreationOptions.RunContinuationsAsynchronously);
+            if (token != default(CancellationToken))
+                token.Register(() =>
+                {
+                    if (!tcs.Task.IsCompleted && !tcs.Task.IsCanceled && !tcs.Task.IsFaulted)
+                    {
+                        // Cancel the current task and remove from the completions
+                        tcs.TrySetCanceled();
+                        _completions.TryRemove(messageId, out tcs);
+                    }
+                });
+
+            // register the callback
+            _completions.AddOrUpdate(messageId, tcs, (msgId, old) => tcs);
+
+            // Return the task hook
+            return tcs.Task;
+        }
+
         /// <summary>
         /// Internal method to watch the reader and notify when new messages are available
         /// </summary>
         async Task Pump()
         {
+            // Need something to track if we should abandon existing tasks...etc.
             while (!_isClosed)
             {
                 if (_raw.DataAvailable)
@@ -64,10 +92,11 @@ namespace Telefrek.Security.LDAP.IO
                         {
                             // read the next operation available
                             var message = await ProtocolOperation.ReadAsync(_reader);
-
-                            // This is costly and not threaded appropriatly, and relies on clients doing the right thing...not a good idea
-                            if (MessageAvailable != null)
-                                MessageAvailable.Invoke(this, new MessageAvailableEventArgs { MessageId = message.MessageId, Message = message });
+                            
+                            // Clear the task
+                            TaskCompletionSource<ProtocolOperation> tcs;                            
+                            if(_completions.TryRemove(message.MessageId, out tcs))
+                                tcs.TrySetResult(message);
                         }
                     }
                     catch (LDAPException)
@@ -82,9 +111,6 @@ namespace Telefrek.Security.LDAP.IO
             }
         }
 
-        public delegate void MessageAvailableHandler(object sender, MessageAvailableEventArgs args);
-        public event MessageAvailableHandler MessageAvailable;
-
         public void Dispose() { }
 
         bool _isDisposed = false;
@@ -98,11 +124,5 @@ namespace Telefrek.Security.LDAP.IO
 
             _isDisposed = true;
         }
-    }
-
-    internal class MessageAvailableEventArgs : EventArgs
-    {
-        public int MessageId { get; set; }
-        public ProtocolOperation Message { get; set; }
     }
 }

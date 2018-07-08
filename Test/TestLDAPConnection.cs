@@ -20,6 +20,10 @@ namespace Telefrek.Security.LDAP.Test
                 await session.StartAsync();
 
                 var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
+                Assert.IsTrue(success, "Failed to login as admin");
+
+                success = await session.TryLoginAsync("cn=test,dc=example,dc=org", "password");
+                Assert.IsFalse(success, "User login should have failed");
 
                 await session.CloseAsync();
             }
@@ -40,6 +44,10 @@ namespace Telefrek.Security.LDAP.Test
                 await session.StartAsync();
 
                 var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
+                Assert.IsTrue(success, "Failed to login as admin");
+
+                success = await session.TryLoginAsync("cn=test,dc=example,dc=org", "password");
+                Assert.IsFalse(success, "User login should have failed");
 
                 await session.CloseAsync();
             }

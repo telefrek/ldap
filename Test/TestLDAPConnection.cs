@@ -19,7 +19,10 @@ namespace Telefrek.Security.LDAP.Test
                 var session = new LDAPSession(new LDAPOptions { Port = 10389, IsSecured = false, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
+                var success = await session.TryLoginAsync("", "");
+                Assert.IsTrue(success, "Failed to login as anonymous");
+
+                success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
                 Assert.IsTrue(success, "Failed to login as admin");
 
                 success = await session.TryLoginAsync("cn=test,dc=example,dc=org", "password");
@@ -43,7 +46,10 @@ namespace Telefrek.Security.LDAP.Test
                 var session = new LDAPSession(new LDAPOptions { Port = 10636, IsSecured = true, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
+                var success = await session.TryLoginAsync("", "");
+                Assert.IsTrue(success, "Failed to login as anonymous");
+
+                success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
                 Assert.IsTrue(success, "Failed to login as admin");
 
                 success = await session.TryLoginAsync("cn=test,dc=example,dc=org", "password");

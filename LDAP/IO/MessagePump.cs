@@ -1,4 +1,5 @@
 using System;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using Telefrek.Security.LDAP.Protocol;
 
@@ -11,6 +12,7 @@ namespace Telefrek.Security.LDAP.IO
     {
         Task _pumpThread;
         LDAPReader _reader;
+        NetworkStream _raw;
 
         volatile bool _isClosed = false;
 
@@ -18,9 +20,11 @@ namespace Telefrek.Security.LDAP.IO
         /// Default constructor
         /// </summary>
         /// <param name="reader">The reader to pump messages from</param>
-        public MessagePump(LDAPReader reader)
+        /// <param name="raw">The raw stream backing the reader</param>
+        public MessagePump(LDAPReader reader, NetworkStream raw)
         {
             _reader = reader;
+            _raw = raw;
         }
 
         /// <summary>
@@ -50,10 +54,9 @@ namespace Telefrek.Security.LDAP.IO
         /// </summary>
         async Task Pump()
         {
-            while (!_reader.IsComplete && !_isClosed)
+            while (!_isClosed)
             {
-                if (_reader.HasData)
-                {
+                if (_raw.DataAvailable)
                     try
                     {
                         // Ensure we can safely read the contents
@@ -71,12 +74,11 @@ namespace Telefrek.Security.LDAP.IO
                     {
                         // TODO: Handle
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                         // This is bad...
                     }
-                }
-                else await Task.Delay(500);
+                else await Task.Delay(250);
             }
         }
 

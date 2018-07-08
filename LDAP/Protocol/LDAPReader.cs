@@ -32,17 +32,7 @@ namespace Telefrek.Security.LDAP.Protocol
         /// Gets the current scope for the reader
         /// </summary>
         public EncodingScope Scope { get; private set; }
-
-        /// <summary>
-        /// Gets a flag to indicate if there is more data available
-        /// </summary>
-        public bool HasData { get { return _source is NetworkStream ? (_source as NetworkStream).DataAvailable : _source.Position < _source.Length; } }
-
-        /// <summary>
-        /// Gets a flag to indicate if the reader is completed
-        /// </summary>
-        public bool IsComplete { get { return _source is NetworkStream ? false : _source.Position >= _source.Length; } }
-
+        
         /// <summary>
         /// Gets the primitive flag for the reader
         /// </summary>

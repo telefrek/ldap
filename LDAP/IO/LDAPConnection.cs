@@ -17,8 +17,8 @@ namespace Telefrek.Security.LDAP.IO
     internal class LDAPConnection : ILDAPConnection
     {
         TcpClient _conn;
-        Stream _transport;
-        Stream _raw;
+        SslStream _transport;
+        NetworkStream _raw;
         MessagePump _pump;
         int _messageId = 0;
         bool _sslEnabled;
@@ -78,7 +78,7 @@ namespace Telefrek.Security.LDAP.IO
                 }
 
                 // Create the pump and start it
-                _pump = new MessagePump(Reader);
+                _pump = new MessagePump(Reader, _raw);
                 _pump.Start();
             }
             catch (Exception e)

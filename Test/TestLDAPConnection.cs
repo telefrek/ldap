@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Telefrek.Security.LDAP.Test
@@ -8,6 +9,11 @@ namespace Telefrek.Security.LDAP.Test
     [TestClass]
     public class TestLDAPConnection
     {
+        class TestOptions : LDAPConfiguration, IOptions<LDAPConfiguration>
+        {
+            public LDAPConfiguration Value => this;
+        }
+
         public TestContext TestContext { get; set; }
 
         [TestMethod]
@@ -16,7 +22,7 @@ namespace Telefrek.Security.LDAP.Test
         {
             try
             {
-                var session = new LDAPSession(new LDAPConfiguration { Port = 10389, IsSecured = false, });
+                var session = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
                 await session.StartAsync();
 
                 var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
@@ -39,7 +45,7 @@ namespace Telefrek.Security.LDAP.Test
         {
             try
             {
-                var session = new LDAPSession(new LDAPConfiguration { Port = 10389, IsSecured = false, });
+                var session = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
                 await session.StartAsync();
 
                 var success = await session.TryLoginAsync("", "", CancellationToken.None);
@@ -66,7 +72,7 @@ namespace Telefrek.Security.LDAP.Test
         {
             try
             {
-                var session = new LDAPSession(new LDAPConfiguration { Port = 10636, IsSecured = true, });
+                var session = new LDAPSession(new TestOptions { Port = 10636, IsSecured = true, });
                 await session.StartAsync();
 
                 var success = await session.TryLoginAsync("", "", CancellationToken.None);

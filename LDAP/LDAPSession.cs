@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using Telefrek.Security.LDAP.IO;
 using Telefrek.Security.LDAP.Protocol;
 
@@ -18,10 +19,10 @@ namespace Telefrek.Security.LDAP
         /// Default constructor
         /// </summary>
         /// <param name="options">Options for LDAP communication</param>
-        public LDAPSession(LDAPConfiguration options)
+        public LDAPSession(IOptions<LDAPConfiguration> options)
         {
-            _options = options;
-            _connection = new LDAPConnection(options.IsSecured);
+            _options = options.Value;
+            _connection = new LDAPConnection(_options.IsSecured);
         }
 
         /// <summary>
@@ -39,10 +40,10 @@ namespace Telefrek.Security.LDAP
         public async Task<bool> TryLoginAsync(string domainUser, string credentials, CancellationToken token)
         {
             var op = new BindRequest { Name = domainUser, Authentication = new SimpleAuthentication { Credentials = credentials } };
-            foreach(var msg in await _connection.TryQueueOperation(op, token))
+            foreach (var msg in await _connection.TryQueueOperation(op, token))
             {
                 var res = msg as LDAPResponse;
-                if(res != null) return res.ResultCode == 0;
+                if (res != null) return res.ResultCode == 0;
             }
 
             return false;
@@ -59,10 +60,10 @@ namespace Telefrek.Security.LDAP
         public async Task<bool> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token)
         {
             var op = new SearchRequest { ObjectDN = dn, Scope = scope, Aliasing = aliasing };
-            foreach(var msg in await _connection.TryQueueOperation(op, token))
+            foreach (var msg in await _connection.TryQueueOperation(op, token))
             {
                 var res = msg as LDAPResponse;
-                if(res != null) return res.ResultCode == 0;
+                if (res != null) return res.ResultCode == 0;
             }
 
             return false;

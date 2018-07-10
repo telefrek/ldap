@@ -1,4 +1,10 @@
 @page
+@using System.Threading
+@using Telefrek.Security.LDAP
+@inject ILDAPSession session
+
+@{await session.StartAsync();}
 
 <h1>Hello, world!</h1>
 <h2>The time on the server is @DateTime.Now</h2>
+<h2>Login status: @await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None)</h2>

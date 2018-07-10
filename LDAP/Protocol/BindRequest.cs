@@ -7,7 +7,7 @@ namespace Telefrek.Security.LDAP.Protocol
     /// <summary>
     ///  Performs a bind request against an LDAP server to login with specific credentials
     /// </summary>
-    internal class BindRequest : ProtocolOperation
+    sealed internal class BindRequest : LDAPRequest
     {
         public override ProtocolOp Operation => ProtocolOp.BIND_REQUEST;
 
@@ -26,9 +26,5 @@ namespace Telefrek.Security.LDAP.Protocol
 
             await writer.WriteAsync(opWriter, 0, EncodingScope.APPLICATION);
         }
-
-        protected override async Task ReadContentsAsync(LDAPReader reader) =>
-            // Can't do this....
-            throw new InvalidOperationException("Cannot read a request");
     }
 }

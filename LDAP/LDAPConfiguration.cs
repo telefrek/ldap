@@ -3,7 +3,7 @@ namespace Telefrek.Security.LDAP
     /// <summary>
     /// POCO options class to use with IOptions pattern
     /// </summary>
-    public class LDAPOptions
+    public class LDAPConfiguration
     {
         /// <summary>
         /// The host to connect to ("0.0.0.0")

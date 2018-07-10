@@ -93,9 +93,9 @@ namespace Telefrek.Security.LDAP.IO
                             // read the next operation available
                             var message = await ProtocolOperation.ReadAsync(_reader);
                             
-                            // Clear the task
+                            // Clear the task if this is a terminal message (not intermediate)
                             TaskCompletionSource<ProtocolOperation> tcs;                            
-                            if(_completions.TryRemove(message.MessageId, out tcs))
+                            if(message.IsTerminating && _completions.TryRemove(message.MessageId, out tcs))
                                 tcs.TrySetResult(message);
                         }
                     }

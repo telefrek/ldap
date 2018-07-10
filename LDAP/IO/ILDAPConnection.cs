@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Telefrek.Security.LDAP.Protocol;
 
@@ -8,7 +10,7 @@ namespace Telefrek.Security.LDAP.IO
     {
         Task ConnectAsync(string host, int port);
         Task CloseAsync();
-        Task<bool> TryQueueOperation(ProtocolOperation op);
+        Task<ICollection<ProtocolOperation>> TryQueueOperation(ProtocolOperation op, CancellationToken token);
         LDAPReader Reader { get; }
         LDAPWriter Writer { get; }
     }

@@ -9,11 +9,10 @@ namespace Telefrek.Security.LDAP.Protocol
     /// </summary>
     internal abstract class ProtocolOperation
     {
-        static int _globalMessgeId = 0;
-
-        public int MessageId { get; set; } = Interlocked.Increment(ref _globalMessgeId);
+        public int MessageId { get; set; }
 
         public virtual bool HasResponse { get { return true; } }
+        public virtual bool IsTerminating { get { return true; } }
 
         public abstract ProtocolOp Operation { get; }
 
@@ -48,13 +47,22 @@ namespace Telefrek.Security.LDAP.Protocol
             switch ((ProtocolOp)messageReader.Tag)
             {
                 case ProtocolOp.BIND_RESPONSE:
-                    var op = new BindResponse { MessageId = messageId };
-                    await op.ReadContentsAsync(messageReader);
-
-                    return op;
+                    return await ReadOperation<BindResponse>(messageReader, messageId);
+                case ProtocolOp.SEARCH_RESPONSE:
+                    return await ReadOperation<SearchResponse>(messageReader, messageId);
+                case ProtocolOp.SEARCH_RESULT:
+                    return await ReadOperation<SearchResult>(messageReader, messageId);
                 default:
                     throw new LDAPProtocolException("Unknown/Invalid protocol operation");
             }
+        }
+
+        private static async Task<T> ReadOperation<T>(LDAPReader messageReader, int messageId) where T : ProtocolOperation, new()
+        {
+            var op = new T() { MessageId = messageId };
+            await op.ReadContentsAsync(messageReader);
+
+            return op;
         }
 
         protected abstract Task WriteContentsAsync(LDAPWriter writer);

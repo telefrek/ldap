@@ -16,6 +16,7 @@ namespace Telefrek.Security.LDAP.IO
     /// </summary>
     internal class LDAPConnection : ILDAPConnection
     {
+        int _globalMessgeId = 0;
         TcpClient _conn;
         SslStream _transport;
         NetworkStream _raw;
@@ -89,37 +90,37 @@ namespace Telefrek.Security.LDAP.IO
 
         public async Task CloseAsync()
         {
-            await TryQueueOperation(new UnbindRequest());
+            await TryQueueOperation(new UnbindRequest(), CancellationToken.None);
             await _pump.StopAsync();
         }
 
-        public async Task<bool> TryQueueOperation(ProtocolOperation op)
+        public async Task<ICollection<ProtocolOperation>> TryQueueOperation(ProtocolOperation op, CancellationToken token)
         {
-            if (op.HasResponse)
-                return await TryQueueResponseOperation(op);
+            op.MessageId = Interlocked.Increment(ref _globalMessgeId);
 
-            await op.WriteAsync(Writer);
-
-            return true;
-        }
-
-        async Task<bool> TryQueueResponseOperation(ProtocolOperation op, CancellationToken token = default(CancellationToken))
-        {
-            var response = _pump.GetResponse(op.MessageId, token);
+            var msgs = new List<ProtocolOperation>();
 
             try
             {
+                var response = _pump.GetResponse(op.MessageId, token);
                 await op.WriteAsync(Writer);
-                var msg = await response;
 
-                var bindRes = msg as BindResponse;
-                if (bindRes != null)
-                    return bindRes.ResultCode == 0;
+                if (op.HasResponse)
+                {
+                    op = null;
+                    while ((op = await response) != null)
+                    {
+                        msgs.Add(op);
+                        if (op.IsTerminating)
+                            break;
+                    }
+                }
             }
             catch (AggregateException)
             {
             }
-            return false;
+
+            return msgs;
         }
 
         /// <summary>

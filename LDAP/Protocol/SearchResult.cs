@@ -1,13 +1,11 @@
-using System;
 using System.Threading.Tasks;
 
 namespace Telefrek.Security.LDAP.Protocol
 {
-    internal class BindResponse : LDAPResponse
+    internal class SearchResult : LDAPResponse
     {
-        public override ProtocolOp Operation => ProtocolOp.BIND_RESPONSE;
+        public override ProtocolOp Operation => ProtocolOp.SEARCH_RESULT;
 
-        // Nothing more to do here
         protected override Task ReadResponseAsync(LDAPReader reader) => Task.CompletedTask;
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Telefrek.Security.LDAP.IO;
 using Telefrek.Security.LDAP.Protocol;
@@ -11,13 +12,13 @@ namespace Telefrek.Security.LDAP
     public sealed class LDAPSession : IDisposable
     {
         ILDAPConnection _connection;
-        LDAPOptions _options;
+        LDAPConfiguration _options;
 
         /// <summary>
         /// Default constructor
         /// </summary>
         /// <param name="options">Options for LDAP communication</param>
-        public LDAPSession(LDAPOptions options)
+        public LDAPSession(LDAPConfiguration options)
         {
             _options = options;
             _connection = new LDAPConnection(options.IsSecured);
@@ -33,11 +34,38 @@ namespace Telefrek.Security.LDAP
         /// </summary>
         /// <param name="domainUser">The domain qualified user</param>
         /// <param name="credentials">The associated credentials</param>
+        /// <param name="token"></param>
         /// <returns>True if the login was successful</returns>
-        public async Task<bool> TryLoginAsync(string domainUser, string credentials)
+        public async Task<bool> TryLoginAsync(string domainUser, string credentials, CancellationToken token = default(CancellationToken))
         {
             var op = new BindRequest { Name = domainUser, Authentication = new SimpleAuthentication { Credentials = credentials } };
-            return await _connection.TryQueueOperation(op);
+            foreach(var msg in await _connection.TryQueueOperation(op, token))
+            {
+                var res = msg as LDAPResponse;
+                if(res != null) return res.ResultCode == 0;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Stub for now
+        /// </summary>
+        /// <param name="dn"></param>
+        /// <param name="scope"></param>
+        /// <param name="aliasing"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public async Task<bool> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token = default(CancellationToken))
+        {
+            var op = new SearchRequest { ObjectDN = dn, Scope = scope, Aliasing = aliasing };
+            foreach(var msg in await _connection.TryQueueOperation(op, token))
+            {
+                var res = msg as LDAPResponse;
+                if(res != null) return res.ResultCode == 0;
+            }
+
+            return false;
         }
 
         /// <summary>

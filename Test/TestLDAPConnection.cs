@@ -19,7 +19,7 @@ namespace Telefrek.Security.LDAP.Test
                 var session = new LDAPSession(new LDAPConfiguration { Port = 10389, IsSecured = false, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
+                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
                 success = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, new CancellationTokenSource(2000).Token);
@@ -34,7 +34,7 @@ namespace Telefrek.Security.LDAP.Test
         }
 
         [TestMethod]
-        [Timeout(15000)]
+        [Timeout(5000)]
         public async Task TestConnection()
         {
             try
@@ -42,15 +42,13 @@ namespace Telefrek.Security.LDAP.Test
                 var session = new LDAPSession(new LDAPConfiguration { Port = 10389, IsSecured = false, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("", "");
+                var success = await session.TryLoginAsync("", "", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as anonymous");
 
-                success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
+                success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
-                success = await session.TrySearch("dc=example,dc=org", LDAPScope.SingleLevel, LDAPAliasDereferencing.Always);
-
-                success = await session.TryLoginAsync("cn=test,dc=example,dc=org", "password");
+                success = await session.TryLoginAsync("cn=test,dc=example,dc=org", "password", CancellationToken.None);
                 Assert.IsFalse(success, "User login should have failed");
 
                 await session.CloseAsync();
@@ -63,7 +61,7 @@ namespace Telefrek.Security.LDAP.Test
         }
 
         [TestMethod]
-        [Timeout(15000)]
+        [Timeout(5000)]
         public async Task TestSSLConnection()
         {
             try
@@ -71,13 +69,13 @@ namespace Telefrek.Security.LDAP.Test
                 var session = new LDAPSession(new LDAPConfiguration { Port = 10636, IsSecured = true, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("", "");
+                var success = await session.TryLoginAsync("", "", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as anonymous");
 
-                success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin");
+                success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
-                success = await session.TryLoginAsync("cn=test,dc=example,dc=org", "password");
+                success = await session.TryLoginAsync("cn=test,dc=example,dc=org", "password", CancellationToken.None);
                 Assert.IsFalse(success, "User login should have failed");
 
                 await session.CloseAsync();

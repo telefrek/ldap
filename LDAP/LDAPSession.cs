@@ -9,7 +9,7 @@ namespace Telefrek.Security.LDAP
     /// <summary>
     /// Represents an LDAP session and is the main entrypoint for the library
     /// </summary>
-    public sealed class LDAPSession : IDisposable
+    public sealed class LDAPSession : ILDAPSession
     {
         ILDAPConnection _connection;
         LDAPConfiguration _options;
@@ -36,7 +36,7 @@ namespace Telefrek.Security.LDAP
         /// <param name="credentials">The associated credentials</param>
         /// <param name="token"></param>
         /// <returns>True if the login was successful</returns>
-        public async Task<bool> TryLoginAsync(string domainUser, string credentials, CancellationToken token = default(CancellationToken))
+        public async Task<bool> TryLoginAsync(string domainUser, string credentials, CancellationToken token)
         {
             var op = new BindRequest { Name = domainUser, Authentication = new SimpleAuthentication { Credentials = credentials } };
             foreach(var msg in await _connection.TryQueueOperation(op, token))
@@ -56,7 +56,7 @@ namespace Telefrek.Security.LDAP
         /// <param name="aliasing"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        public async Task<bool> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token = default(CancellationToken))
+        public async Task<bool> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token)
         {
             var op = new SearchRequest { ObjectDN = dn, Scope = scope, Aliasing = aliasing };
             foreach(var msg in await _connection.TryQueueOperation(op, token))

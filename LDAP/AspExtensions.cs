@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,7 +11,7 @@ namespace Telefrek.Security.LDAP
     public static class AspExtensions
     {
         /// <summary>
-        /// Add LDAP Authentication into the pipeline
+        /// Add LDAP Authentication into the pipeline, still requires enabling in user auth
         /// </summary>
         /// <param name="services">The current service collection</param>
         /// <param name="config">The current configuration</param>
@@ -18,7 +19,9 @@ namespace Telefrek.Security.LDAP
         public static IServiceCollection AddLDAPAuth(this IServiceCollection services, IConfiguration config)
         {
             services.Configure<LDAPConfiguration>(config.GetSection("ldap"));
-            services.AddScoped<IAuthenticationService, LDAPAuthentication>();
+            services.AddScoped<ILDAPSession, LDAPSession>();
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie();
             
             return services;
         }

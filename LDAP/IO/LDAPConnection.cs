@@ -7,9 +7,9 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Telefrek.Security.LDAP.Protocol;
+using Telefrek.LDAP.Protocol;
 
-namespace Telefrek.Security.LDAP.IO
+namespace Telefrek.LDAP.IO
 {
     /// <summary>
     /// Class for handling the protocol level communications

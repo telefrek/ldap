@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Telefrek.Security.LDAP
+namespace Telefrek.LDAP
 {
     public interface ILDAPSession : IDisposable
     {
@@ -30,6 +30,22 @@ namespace Telefrek.Security.LDAP
         /// <param name="token"></param>
         /// <returns></returns>
         Task<bool> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token);
+
+        /// <summary>
+        /// Try to add a record to the directory
+        /// </summary>
+        /// <param name="dn">The directory name</param>
+        /// <param name="token"></param>
+        /// <returns>True if successful</returns>
+        Task<bool> TryAdd(string dn, CancellationToken token);
+
+        /// <summary>
+        /// Try to remove a record from the directory
+        /// </summary>
+        /// <param name="dn">The directory name</param>
+        /// <param name="token"></param>
+        /// <returns>True if successful</returns>
+        Task<bool> TryRemove(string dn, CancellationToken token);
 
         /// <summary>
         /// Ends the session and closes all resources asynchronously

@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Telefrek.Security.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol
 {
     /// <summary>
     ///  Performs a bind request against an LDAP server to login with specific credentials
@@ -17,7 +17,7 @@ namespace Telefrek.Security.LDAP.Protocol
 
         protected override async Task WriteContentsAsync(LDAPWriter writer)
         {
-            var opWriter = new LDAPWriter(new MemoryStream());
+            var opWriter = new LDAPWriter();
 
             await opWriter.WriteAsync(Version);
             await opWriter.WriteAsync(Name);

@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace Telefrek.Security.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol
 {
 
     /// <summary>

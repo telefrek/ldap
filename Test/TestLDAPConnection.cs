@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Telefrek.Security.LDAP.Test
+namespace Telefrek.LDAP.Test
 {
     [TestClass]
     public class TestLDAPConnection
@@ -28,8 +28,36 @@ namespace Telefrek.Security.LDAP.Test
                 var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
-                success = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, new CancellationTokenSource(2000).Token);
-                await Task.Delay(2000);
+                success = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, new CancellationTokenSource(5000).Token);
+                await session.CloseAsync();
+            }
+            catch (LDAPException ldapEx)
+            {
+                TestContext.WriteLine("Invalid exception : {0}", ldapEx);
+                Assert.Fail("Unhandled exception");
+            }
+        }
+
+
+        [TestMethod]
+        //[Timeout(5000)]
+        public async Task TestLifecycle()
+        {
+            try
+            {
+                var session = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
+                await session.StartAsync();
+
+                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
+                Assert.IsTrue(success, "Failed to login as admin");
+
+                success = await session.TryAdd("cn=test,dc=example,dc=org", CancellationToken.None);
+                Assert.IsTrue(success, "Failed to add the user");
+
+
+                success = await session.TryRemove("cn=test,dc=example,dc=org", CancellationToken.None);
+                Assert.IsTrue(success, "Failed to remove the user");
+
                 await session.CloseAsync();
             }
             catch (LDAPException ldapEx)

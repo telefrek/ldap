@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Telefrek.Security.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol
 {
     internal class BindResponse : LDAPResponse
     {

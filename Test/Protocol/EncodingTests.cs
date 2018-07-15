@@ -2,7 +2,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Telefrek.Security.LDAP.Protocol.Test
+namespace Telefrek.LDAP.Protocol.Test
 {
     [TestClass]
     public class EncodingTests

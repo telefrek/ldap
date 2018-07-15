@@ -1,6 +1,6 @@
 using System.Runtime.Serialization;
 
-namespace Telefrek.Security.LDAP
+namespace Telefrek.LDAP
 {
     /// <summary>
     /// Base LDAP exception

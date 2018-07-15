@@ -3,9 +3,9 @@ using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Telefrek.Security.LDAP.Protocol;
+using Telefrek.LDAP.Protocol;
 
-namespace Telefrek.Security.LDAP.IO
+namespace Telefrek.LDAP.IO
 {
     /// <summary>
     /// Class is uesd to read messages from a stream and notify anyone who is interested in the events
@@ -65,7 +65,8 @@ namespace Telefrek.Security.LDAP.IO
                     {
                         // Cancel the current task and remove from the completions
                         tcs.TrySetCanceled();
-                        _completions.TryRemove(messageId, out tcs);
+                        TaskCompletionSource<ProtocolOperation> tmp;
+                        _completions.TryRemove(messageId, out tmp);
                     }
                 });
 
@@ -92,10 +93,10 @@ namespace Telefrek.Security.LDAP.IO
                         {
                             // read the next operation available
                             var message = await ProtocolOperation.ReadAsync(_reader);
-                            
+
                             // Clear the task if this is a terminal message (not intermediate)
-                            TaskCompletionSource<ProtocolOperation> tcs;                            
-                            if(message.IsTerminating && _completions.TryRemove(message.MessageId, out tcs))
+                            TaskCompletionSource<ProtocolOperation> tcs;
+                            if (message.IsTerminating && _completions.TryRemove(message.MessageId, out tcs))
                                 tcs.TrySetResult(message);
                         }
                     }

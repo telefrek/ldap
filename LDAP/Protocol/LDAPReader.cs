@@ -3,9 +3,9 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using Telefrek.Security.LDAP.IO;
+using Telefrek.LDAP.IO;
 
-namespace Telefrek.Security.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol
 {
     /// <summary>
     /// Reads a stream as an LDAP protocol stream and decodes objects

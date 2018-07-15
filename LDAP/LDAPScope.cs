@@ -1,4 +1,4 @@
-namespace Telefrek.Security.LDAP
+namespace Telefrek.LDAP
 {
     /// <summary>
     /// Search scope for LDAP operations

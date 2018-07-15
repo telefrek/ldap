@@ -1,4 +1,4 @@
-namespace Telefrek.Security.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol
 {
     /// <summary>
     /// This is the full list of supported operations

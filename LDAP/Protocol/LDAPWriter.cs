@@ -2,7 +2,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Telefrek.Security.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol
 {
     /// <summary>
     /// Writes objects to the underlying stream using the LDAP protocol
@@ -10,6 +10,14 @@ namespace Telefrek.Security.LDAP.Protocol
     public class LDAPWriter
     {
         Stream _target;
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        public LDAPWriter() : this(new MemoryStream())
+        {
+
+        }
 
         /// <summary>
         /// Default constructor

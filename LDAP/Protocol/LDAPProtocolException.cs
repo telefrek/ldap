@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Telefrek.Security.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol
 {
     /// <summary>
     /// Protocol specific exceptions

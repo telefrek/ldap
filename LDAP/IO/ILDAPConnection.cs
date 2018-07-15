@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Telefrek.Security.LDAP.Protocol;
+using Telefrek.LDAP.Protocol;
 
-namespace Telefrek.Security.LDAP.IO
+namespace Telefrek.LDAP.IO
 {
     internal interface ILDAPConnection : IDisposable
     {

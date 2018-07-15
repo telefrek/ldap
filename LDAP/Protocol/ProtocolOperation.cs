@@ -2,7 +2,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Telefrek.Security.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol
 {
     /// <summary>
     /// Default protocol operation class used to pass messages back and forth
@@ -19,7 +19,7 @@ namespace Telefrek.Security.LDAP.Protocol
         public async Task WriteAsync(LDAPWriter writer)
         {
             // Buffer the sequence to a memory stream first
-            var opWriter = new LDAPWriter(new MemoryStream());
+            var opWriter = new LDAPWriter();
             await opWriter.WriteAsync(MessageId);
 
             // Write the op choice
@@ -52,6 +52,10 @@ namespace Telefrek.Security.LDAP.Protocol
                     return await ReadOperation<SearchResponse>(messageReader, messageId);
                 case ProtocolOp.SEARCH_RESULT:
                     return await ReadOperation<SearchResult>(messageReader, messageId);
+                case ProtocolOp.ADD_RESPONSE:
+                    return await ReadOperation<AddResponse>(messageReader, messageId);
+                case ProtocolOp.DEL_RESPONSE:
+                    return await ReadOperation<DeleteResponse>(messageReader, messageId);
                 default:
                     throw new LDAPProtocolException("Unknown/Invalid protocol operation");
             }

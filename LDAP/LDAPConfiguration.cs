@@ -1,4 +1,4 @@
-namespace Telefrek.Security.LDAP
+namespace Telefrek.LDAP
 {
     /// <summary>
     /// POCO options class to use with IOptions pattern

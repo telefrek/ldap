@@ -2,10 +2,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using Telefrek.Security.LDAP.IO;
-using Telefrek.Security.LDAP.Protocol;
+using Telefrek.LDAP.IO;
+using Telefrek.LDAP.Protocol;
 
-namespace Telefrek.Security.LDAP
+namespace Telefrek.LDAP
 {
     /// <summary>
     /// Represents an LDAP session and is the main entrypoint for the library
@@ -59,7 +59,7 @@ namespace Telefrek.Security.LDAP
         /// <returns></returns>
         public async Task<bool> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token)
         {
-            var op = new SearchRequest { ObjectDN = dn, Scope = scope, Aliasing = aliasing };
+            var op = new SearchRequest { DistinguishedName = dn, Scope = scope, Aliasing = aliasing };
             foreach (var msg in await _connection.TryQueueOperation(op, token))
             {
                 var res = msg as LDAPResponse;
@@ -68,6 +68,58 @@ namespace Telefrek.Security.LDAP
 
             return false;
         }
+
+        /// <summary>
+        /// Try to add a record to the directory
+        /// </summary>
+        /// <param name="dn">The directory name</param>
+        /// <param name="token"></param>
+        /// <returns>True if successful</returns>
+        public async Task<bool> TryAdd(string dn, CancellationToken token)
+        {
+            var op = new AddRequest { DistinguishedName = dn };
+            op.Attributes = new LDAPAttribute[]
+            {
+                new LDAPAttribute
+                { 
+                    Description = "objectClass",
+                    Values = new string[] { "top", "person" } 
+                },
+                new LDAPAttribute
+                {
+                    Description = "sn",
+                    Values = new string[] { "test" }
+                }
+            };
+
+            foreach (var msg in await _connection.TryQueueOperation(op, token))
+            {
+                var res = msg as LDAPResponse;
+                if (res != null) return res.ResultCode == 0;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try to remove a record from the directory
+        /// </summary>
+        /// <param name="dn">The directory name</param>
+        /// <param name="token"></param>
+        /// <returns>True if successful</returns>
+        public async Task<bool> TryRemove(string dn, CancellationToken token)
+        {
+            var op = new DeleteRequest { DistinguishedName = dn };
+
+            foreach (var msg in await _connection.TryQueueOperation(op, token))
+            {
+                var res = msg as LDAPResponse;
+                if (res != null) return res.ResultCode == 0;
+            }
+
+            return false;
+        }
+
 
         /// <summary>
         /// Ends the session and closes all resources asynchronously

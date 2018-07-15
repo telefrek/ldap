@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Telefrek.Security.LDAP
+namespace Telefrek.LDAP
 {
     /// <summary>
     /// Extendions for easy integration with aspnet core
@@ -22,8 +23,18 @@ namespace Telefrek.Security.LDAP
             services.AddScoped<ILDAPSession, LDAPSession>();
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie();
-            
+
             return services;
+        }
+
+        /// <summary>
+        /// Adds LDAP Authentication to the builder
+        /// </summary>
+        /// <param name="builder">The current application builder</param>
+        /// <returns>The modified application builder</returns>
+        public static IApplicationBuilder UseLDAPAuth(this IApplicationBuilder builder)
+        {
+            return builder;
         }
     }
 }

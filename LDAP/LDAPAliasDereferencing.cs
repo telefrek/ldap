@@ -1,4 +1,4 @@
-namespace Telefrek.Security.LDAP
+namespace Telefrek.LDAP
 {
     /// <summary>
     /// Indicates how alias dereferencing should be performed

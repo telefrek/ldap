@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Telefrek.LDAP.Protocol.Encoding;
 
 namespace Telefrek.LDAP.Protocol
 {
@@ -12,7 +13,7 @@ namespace Telefrek.LDAP.Protocol
         /// </summary>
         /// <param name="reader">The reader to test</param>
         /// <param name="tag">The tag to check</param>
-        public static async Task GuardAsync(this LDAPReader reader, int tag)
+        internal static async Task GuardAsync(this LDAPReader reader, int tag)
         {
             if (!await reader.ReadAsync())
                 throw new LDAPProtocolException("Invalid response object");

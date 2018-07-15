@@ -1,9 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using Telefrek.LDAP.Protocol.Encoding;
 
 namespace Telefrek.LDAP.Protocol
 {
-    internal sealed class UnbindRequest : LDAPRequest
+    internal class UnbindRequest : LDAPRequest
     {
         public override ProtocolOp Operation => ProtocolOp.UNBIND_REQUEST;
         public override bool HasResponse => false;

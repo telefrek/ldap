@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Telefrek.LDAP.Protocol;
+using Telefrek.LDAP.Protocol.Collections;
+using Telefrek.LDAP.Protocol.Encoding;
 
-namespace Telefrek.LDAP.IO
+namespace Telefrek.LDAP.Protocol.IO
 {
     /// <summary>
     /// Class is uesd to read messages from a stream and notify anyone who is interested in the events
@@ -16,8 +19,8 @@ namespace Telefrek.LDAP.IO
         LDAPReader _reader;
         NetworkStream _raw;
 
-        ConcurrentDictionary<int, TaskCompletionSource<ProtocolOperation>> _completions =
-            new ConcurrentDictionary<int, TaskCompletionSource<ProtocolOperation>>();
+        ConcurrentDictionary<int, StreamingEnumerator<LDAPResponse>> _completions =
+            new ConcurrentDictionary<int, StreamingEnumerator<LDAPResponse>>();
 
         volatile bool _isClosed = false;
 
@@ -54,31 +57,24 @@ namespace Telefrek.LDAP.IO
             await _pumpThread;
         }
 
-        public Task<ProtocolOperation> GetResponse(int messageId, CancellationToken token = default(CancellationToken))
+        public IEnumerable<LDAPResponse> GetResponse(int messageId)
         {
             // Create the source and register the cancellation token if supplied
-            var tcs = new TaskCompletionSource<ProtocolOperation>(TaskCreationOptions.AttachedToParent | TaskCreationOptions.RunContinuationsAsynchronously);
-            if (token != default(CancellationToken))
-                token.Register(() =>
-                {
-                    if (!tcs.Task.IsCompleted && !tcs.Task.IsCanceled && !tcs.Task.IsFaulted)
-                    {
-                        // Cancel the current task and remove from the completions
-                        tcs.TrySetCanceled();
-                        TaskCompletionSource<ProtocolOperation> tmp;
-                        _completions.TryRemove(messageId, out tmp);
-                    }
-                });
+            var e = new StreamingEnumerator<LDAPResponse>();
 
             // register the callback
-            _completions.AddOrUpdate(messageId, tcs, (msgId, old) => tcs);
+            _completions.AddOrUpdate(messageId, e, (msgId, old) =>
+            {
+                old.Close();
+                return e;
+            });
 
-            // Return the task hook
-            return tcs.Task;
+            // Return the enumeration
+            return e;
         }
 
         /// <summary>
-        /// Internal method to watch the reader and notify when new messages are available
+        /// public method to watch the reader and notify when new messages are available
         /// </summary>
         async Task Pump()
         {
@@ -92,12 +88,16 @@ namespace Telefrek.LDAP.IO
                         if (await _reader.ReadAsync())
                         {
                             // read the next operation available
-                            var message = await ProtocolOperation.ReadAsync(_reader);
+                            var message = await _reader.ReadResponseAsync();
 
-                            // Clear the task if this is a terminal message (not intermediate)
-                            TaskCompletionSource<ProtocolOperation> tcs;
-                            if (message.IsTerminating && _completions.TryRemove(message.MessageId, out tcs))
-                                tcs.TrySetResult(message);
+                            // Send this message along
+                            StreamingEnumerator<LDAPResponse> e;
+                            if (_completions.TryGetValue(message.MessageId, out e))
+                                e.Add(message);
+
+                            // Close the stream, not more objects are coming
+                            if (message.IsTerminating && _completions.TryRemove(message.MessageId, out e))
+                                e.Close();
                         }
                     }
                     catch (LDAPException)
@@ -112,7 +112,7 @@ namespace Telefrek.LDAP.IO
             }
         }
 
-        public void Dispose() { }
+        public void Dispose() => Dispose(true);
 
         bool _isDisposed = false;
 

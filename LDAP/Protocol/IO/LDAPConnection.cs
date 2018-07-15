@@ -8,8 +8,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Telefrek.LDAP.Protocol;
+using Telefrek.LDAP.Protocol.Encoding;
 
-namespace Telefrek.LDAP.IO
+namespace Telefrek.LDAP.Protocol.IO
 {
     /// <summary>
     /// Class for handling the protocol level communications
@@ -25,10 +26,10 @@ namespace Telefrek.LDAP.IO
         bool _sslEnabled;
 
         /// <summary>
-        /// Internal constructor used to establish streams
+        /// public constructor used to establish streams
         /// </summary>
         /// <param name="sslEnabled"></param>
-        internal LDAPConnection(bool sslEnabled)
+        public LDAPConnection(bool sslEnabled)
         {
             _conn = new TcpClient();
             _sslEnabled = sslEnabled;
@@ -94,33 +95,26 @@ namespace Telefrek.LDAP.IO
             await _pump.StopAsync();
         }
 
-        public async Task<ICollection<ProtocolOperation>> TryQueueOperation(ProtocolOperation op, CancellationToken token)
+        public async Task<IEnumerable<LDAPResponse>> TryQueueOperation(LDAPRequest request, CancellationToken token)
         {
-            op.MessageId = Interlocked.Increment(ref _globalMessgeId);
-
-            var msgs = new List<ProtocolOperation>();
+            request.MessageId = Interlocked.Increment(ref _globalMessgeId);
 
             try
             {
-                var response = _pump.GetResponse(op.MessageId, token);
-                await op.WriteAsync(Writer);
-
-                if (op.HasResponse)
+                if (request.HasResponse)
                 {
-                    op = null;
-                    while ((op = await response) != null)
-                    {
-                        msgs.Add(op);
-                        if (op.IsTerminating)
-                            break;
-                    }
+                    var response = _pump.GetResponse(request.MessageId);
+                    await request.WriteAsync(Writer);
+
+                    return response;
                 }
+                else await request.WriteAsync(Writer);
             }
             catch (AggregateException)
             {
             }
 
-            return msgs;
+            return new LDAPResponse[] { };
         }
 
         /// <summary>

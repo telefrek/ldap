@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Telefrek.LDAP.Protocol.Encoding;
 
 namespace Telefrek.LDAP.Protocol
 {
-    internal class SearchResponse : ProtocolOperation
+    internal class SearchResponse : LDAPResponse
     {
         public override ProtocolOp Operation => ProtocolOp.SEARCH_RESPONSE;
 
@@ -12,7 +13,7 @@ namespace Telefrek.LDAP.Protocol
         public string DistinguishedName { get; set; }
         public LDAPAttribute[] Attributes { get; set; }
 
-        protected override async Task ReadContentsAsync(LDAPReader reader)
+        public override async Task ReadContentsAsync(LDAPReader reader)
         {
             var msgReader = reader.CreateReader();
 
@@ -30,11 +31,6 @@ namespace Telefrek.LDAP.Protocol
                     await attr.ReadContentsAsync(attrReader);
                 }
             }
-        }
-
-        protected override Task WriteContentsAsync(LDAPWriter writer)
-        {
-            throw new System.NotImplementedException();
         }
     }
 }

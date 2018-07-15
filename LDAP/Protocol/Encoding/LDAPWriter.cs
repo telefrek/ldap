@@ -1,13 +1,12 @@
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace Telefrek.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol.Encoding
 {
     /// <summary>
     /// Writes objects to the underlying stream using the LDAP protocol
     /// </summary>
-    public class LDAPWriter
+    internal class LDAPWriter
     {
         Stream _target;
 
@@ -71,7 +70,7 @@ namespace Telefrek.LDAP.Protocol
         /// <param name="scope">The scope for the value</param>
         public async Task WriteAsync(string value, int tag, EncodingScope scope)
         {
-            var buffer = Encoding.UTF8.GetBytes(value);
+            var buffer = System.Text.Encoding.UTF8.GetBytes(value);
             await EncodeHeaderAsync(tag, scope, true);
             await EncodeLengthAsync(buffer.Length);
             await _target.WriteAsync(buffer, 0, buffer.Length);

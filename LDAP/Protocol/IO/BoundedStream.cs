@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Telefrek.LDAP.IO
+namespace Telefrek.LDAP.Protocol.IO
 {
     internal sealed class BoundedStream : Stream
     {

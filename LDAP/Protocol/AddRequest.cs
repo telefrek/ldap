@@ -1,5 +1,6 @@
 using System.IO;
 using System.Threading.Tasks;
+using Telefrek.LDAP.Protocol.Encoding;
 
 namespace Telefrek.LDAP.Protocol
 {

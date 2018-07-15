@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
@@ -17,7 +18,6 @@ namespace Telefrek.LDAP.Test
         public TestContext TestContext { get; set; }
 
         [TestMethod]
-        [Timeout(5000)]
         public async Task TestSearch()
         {
             try
@@ -28,7 +28,14 @@ namespace Telefrek.LDAP.Test
                 var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
-                success = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, new CancellationTokenSource(5000).Token);
+                var result = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, new CancellationTokenSource(5000).Token);
+                Assert.AreEqual(LDAPResultCode.Success, result.ResultCode, "Expected successful search");
+                
+                var results = result.Objects.ToArray();
+                Assert.IsNotNull(results, "Expected object to be returned");
+                Assert.AreEqual(1, results.Length, "Expected 1 object to be returned");
+                TestContext.WriteLine("Object: {0}", results[0].DistinguishedName);
+                
                 await session.CloseAsync();
             }
             catch (LDAPException ldapEx)
@@ -40,7 +47,6 @@ namespace Telefrek.LDAP.Test
 
 
         [TestMethod]
-        //[Timeout(5000)]
         public async Task TestLifecycle()
         {
             try
@@ -68,7 +74,6 @@ namespace Telefrek.LDAP.Test
         }
 
         [TestMethod]
-        [Timeout(5000)]
         public async Task TestConnection()
         {
             try
@@ -95,7 +100,6 @@ namespace Telefrek.LDAP.Test
         }
 
         [TestMethod]
-        [Timeout(5000)]
         public async Task TestSSLConnection()
         {
             try

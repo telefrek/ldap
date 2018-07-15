@@ -6,7 +6,7 @@ namespace Telefrek.LDAP.Protocol
     /// <summary>
     /// Protocol specific exceptions
     /// </summary>
-    public class LDAPProtocolException : LDAPException
+    internal class LDAPProtocolException : LDAPException
     {
         /// <summary>
         /// Default constructor

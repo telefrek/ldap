@@ -1,9 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Telefrek.LDAP
 {
+    /// <summary>
+    /// Interface for manipulating an LDAP Session
+    /// </summary>
     public interface ILDAPSession : IDisposable
     {
 
@@ -29,7 +33,7 @@ namespace Telefrek.LDAP
         /// <param name="aliasing"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        Task<bool> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token);
+        Task<LDAPResult> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token);
 
         /// <summary>
         /// Try to add a record to the directory

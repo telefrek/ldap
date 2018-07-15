@@ -1,16 +1,14 @@
 using System;
 using System.IO;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
-using Telefrek.LDAP.IO;
+using Telefrek.LDAP.Protocol.IO;
 
-namespace Telefrek.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol.Encoding
 {
     /// <summary>
     /// Reads a stream as an LDAP protocol stream and decodes objects
     /// </summary>
-    public class LDAPReader
+    internal class LDAPReader
     {
         Stream _source;
 
@@ -32,7 +30,7 @@ namespace Telefrek.LDAP.Protocol
         /// Gets the current scope for the reader
         /// </summary>
         public EncodingScope Scope { get; private set; }
-        
+
         /// <summary>
         /// Gets the primitive flag for the reader
         /// </summary>
@@ -130,6 +128,47 @@ namespace Telefrek.LDAP.Protocol
             throw new InvalidOperationException("Cannot create reader for primitive types");
         }
 
+        public async Task<LDAPResponse> ReadResponseAsync()
+        {
+            if (Scope != EncodingScope.UNIVERSAL || Tag != (int)EncodingType.SEQUENCE)
+                throw new LDAPProtocolException("Invalid envelope");
+
+            var messageReader = CreateReader();
+            if (!await messageReader.ReadAsync())
+                throw new LDAPProtocolException("Truncated envelope");
+
+            // Read the message id
+            var messageId = await messageReader.ReadAsIntAsync();
+
+            if (!await messageReader.ReadAsync())
+                throw new LDAPProtocolException("Truncated envelope");
+
+            switch ((ProtocolOp)messageReader.Tag)
+            {
+                case ProtocolOp.BIND_RESPONSE:
+                    return await ReadMessageContents<BindResponse>(messageReader, messageId);
+                case ProtocolOp.SEARCH_RESPONSE:
+                    return await ReadMessageContents<SearchResponse>(messageReader, messageId);
+                case ProtocolOp.SEARCH_RESULT:
+                    return await ReadMessageContents<SearchResult>(messageReader, messageId);
+                case ProtocolOp.ADD_RESPONSE:
+                    return await ReadMessageContents<AddResponse>(messageReader, messageId);
+                case ProtocolOp.DEL_RESPONSE:
+                    return await ReadMessageContents<DeleteResponse>(messageReader, messageId);
+                default:
+                    throw new LDAPProtocolException("Unknown/Invalid protocol operation");
+            }
+        }
+
+        public async Task<T> ReadMessageContents<T>(LDAPReader messageReader, int messageId)
+        where T : LDAPResponse, new()
+        {
+            var op = new T() { MessageId = messageId };
+            await op.ReadContentsAsync(messageReader);
+
+            return op;
+        }
+
         /// <summary>
         /// Reads the next token as a boolean value
         /// </summary>
@@ -177,7 +216,7 @@ namespace Telefrek.LDAP.Protocol
             if (Length > 0)
                 await _source.ReadAsync(buffer, 0, Length);
 
-            return Encoding.UTF8.GetString(buffer);
+            return System.Text.Encoding.UTF8.GetString(buffer);
         }
 
         /// <summary>

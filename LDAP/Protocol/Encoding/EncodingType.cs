@@ -1,4 +1,4 @@
-namespace Telefrek.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol.Encoding
 {
     /// <summary>
     /// Type of value being encoded

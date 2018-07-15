@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Telefrek.LDAP.Protocol;
+using Telefrek.LDAP.Protocol.Encoding;
 
-namespace Telefrek.LDAP.IO
+namespace Telefrek.LDAP.Protocol.IO
 {
     internal interface ILDAPConnection : IDisposable
     {
         Task ConnectAsync(string host, int port);
         Task CloseAsync();
-        Task<ICollection<ProtocolOperation>> TryQueueOperation(ProtocolOperation op, CancellationToken token);
+        Task<IEnumerable<LDAPResponse>> TryQueueOperation(LDAPRequest request, CancellationToken token);
         LDAPReader Reader { get; }
         LDAPWriter Writer { get; }
     }

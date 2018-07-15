@@ -1,15 +1,16 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Telefrek.LDAP.Protocol.Encoding;
 
 namespace Telefrek.LDAP.Protocol
 {
-    public class LDAPAttribute
+    internal class LDAPAttribute
     {
         public string Description { get; set; }
         public string[] Values { get; set; }
 
-        internal async Task WriteContentsAsync(LDAPWriter writer)
+        public async Task WriteContentsAsync(LDAPWriter writer)
         {
             var attWriter = new LDAPWriter();
 
@@ -24,7 +25,7 @@ namespace Telefrek.LDAP.Protocol
             await writer.WriteAsync(attWriter);
         }
 
-        internal async Task ReadContentsAsync(LDAPReader reader)
+        public async Task ReadContentsAsync(LDAPReader reader)
         {
             // Read the description
             if (!await reader.ReadAsync())

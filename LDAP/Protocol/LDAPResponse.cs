@@ -1,15 +1,19 @@
 using System;
 using System.Threading.Tasks;
+using Telefrek.LDAP.Protocol.Encoding;
 
 namespace Telefrek.LDAP.Protocol
 {
-    internal abstract class LDAPResponse : ProtocolOperation
+    internal abstract class LDAPResponse
     {
         public int ResultCode { get; set; }
         public string MatchedDN { get; set; }
+        public int MessageId { get; set; }
         public string DiagnosticMessage { get; set; }
+        public abstract ProtocolOp Operation { get; }
+        public virtual bool IsTerminating => true;
 
-        protected sealed override async Task ReadContentsAsync(LDAPReader reader)
+        public virtual async Task ReadContentsAsync(LDAPReader reader)
         {
             // Validate the state of the reader
             if (reader.Tag != (int)Operation || reader.Scope != EncodingScope.APPLICATION)
@@ -43,8 +47,6 @@ namespace Telefrek.LDAP.Protocol
             }
         }
 
-        protected abstract Task ReadResponseAsync(LDAPReader reader);
-
-        protected override Task WriteContentsAsync(LDAPWriter writer) => throw new InvalidOperationException("Cannot write a response");
+        protected virtual Task ReadResponseAsync(LDAPReader reader) => Task.CompletedTask;
     }
 }

@@ -1,4 +1,4 @@
-namespace Telefrek.LDAP.Protocol
+namespace Telefrek.LDAP.Protocol.Encoding
 {
     /// <summary>
     /// The scope of the encoding

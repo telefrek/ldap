@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using Telefrek.LDAP.IO;
 using Telefrek.LDAP.Protocol;
+using Telefrek.LDAP.Protocol.IO;
 
 namespace Telefrek.LDAP
 {
@@ -57,16 +58,35 @@ namespace Telefrek.LDAP
         /// <param name="aliasing"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        public async Task<bool> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token)
+        public async Task<LDAPResult> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token)
         {
             var op = new SearchRequest { DistinguishedName = dn, Scope = scope, Aliasing = aliasing };
+            var objList = new List<LDAPObject>();
+            var result = new LDAPResult
+            {
+                Objects = objList,
+                IsStreaming = false,
+            };
+
             foreach (var msg in await _connection.TryQueueOperation(op, token))
             {
-                var res = msg as LDAPResponse;
-                if (res != null) return res.ResultCode == 0;
+                switch (msg.Operation)
+                {
+                    case ProtocolOp.SEARCH_RESPONSE:
+                        var sResponse = msg as SearchResponse;
+                        if (!string.IsNullOrWhiteSpace(sResponse.DistinguishedName))
+                            objList.Add(new LDAPObject { DistinguishedName = sResponse.DistinguishedName });
+                        break;
+                    case ProtocolOp.SEARCH_RESULT:
+                        var sResult = msg as SearchResult;
+                        result.ResultCode = (LDAPResultCode)sResult.ResultCode;
+                        result.WasSuccessful = sResult.ResultCode == 0;
+                        break;
+                        
+                }
             }
 
-            return false;
+            return result;
         }
 
         /// <summary>
@@ -81,9 +101,9 @@ namespace Telefrek.LDAP
             op.Attributes = new LDAPAttribute[]
             {
                 new LDAPAttribute
-                { 
+                {
                     Description = "objectClass",
-                    Values = new string[] { "top", "person" } 
+                    Values = new string[] { "top", "person" }
                 },
                 new LDAPAttribute
                 {

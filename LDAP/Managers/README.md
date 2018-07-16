@@ -2,6 +2,6 @@
 
 Wrappers around the LDAP protocol to help manage basic operations.
 
-# IUserManager
+# ILDAPUserManager
 
 Manages user interactions

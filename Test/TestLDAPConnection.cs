@@ -34,7 +34,8 @@ namespace Telefrek.LDAP.Test
                 var results = result.Objects.ToArray();
                 Assert.IsNotNull(results, "Expected object to be returned");
                 Assert.AreEqual(1, results.Length, "Expected 1 object to be returned");
-                TestContext.WriteLine("Object: {0}", results[0].DistinguishedName);
+                Assert.AreEqual("cn=admin,dc=example,dc=org", results[0].DistinguishedName, true, "mismatch DN");
+                Assert.AreEqual(4, results[0].Attributes.Count, "Wrong number of attributes for default object");
                 
                 await session.CloseAsync();
             }

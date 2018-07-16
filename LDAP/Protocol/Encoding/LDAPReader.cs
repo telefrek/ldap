@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Telefrek.LDAP.Protocol.IO;
@@ -128,6 +129,10 @@ namespace Telefrek.LDAP.Protocol.Encoding
             throw new InvalidOperationException("Cannot create reader for primitive types");
         }
 
+        /// <summary>
+        /// Reads the LDAPResponse object off the stream
+        /// </summary>
+        /// <returns>An appropriately typed LDAPResponse</returns>
         public async Task<LDAPResponse> ReadResponseAsync()
         {
             if (Scope != EncodingScope.UNIVERSAL || Tag != (int)EncodingType.SEQUENCE)
@@ -140,9 +145,11 @@ namespace Telefrek.LDAP.Protocol.Encoding
             // Read the message id
             var messageId = await messageReader.ReadAsIntAsync();
 
+            // Ensure we have more data
             if (!await messageReader.ReadAsync())
                 throw new LDAPProtocolException("Truncated envelope");
 
+            // Get the appropriate message type
             switch ((ProtocolOp)messageReader.Tag)
             {
                 case ProtocolOp.BIND_RESPONSE:
@@ -158,6 +165,47 @@ namespace Telefrek.LDAP.Protocol.Encoding
                 default:
                     throw new LDAPProtocolException("Unknown/Invalid protocol operation");
             }
+        }
+
+        /// <summary>
+        /// Reads an LDAPAttribute collection from the stream
+        /// </summary>
+        /// <returns>A collection of LDAPAttribute objects</returns>
+        public async Task<ICollection<LDAPAttribute>> ReadPartialListAsync()
+        {
+            var aList = new List<LDAPAttribute>();
+
+            // Validate reader has content
+            while (await ReadAsync())
+            {
+                var aReader = CreateReader();
+                if (await aReader.ReadAsync())
+                    aList.Add(await ReadPartialAsync(aReader));
+            }
+
+            return aList;
+        }
+
+        /// <summary>
+        /// Reads the individual PartialAttribute off the stream
+        /// </summary>
+        /// <param name="reader">The reader to read from</param>
+        /// <returns>The LDAPAttribute value</returns>
+        async Task<LDAPAttribute> ReadPartialAsync(LDAPReader reader)
+        {
+            var attr = new LDAPAttribute();
+
+            // Read the description
+            attr.Description = await reader.ReadAsStringAsync();
+            attr.Values = new List<string>();
+
+            // Read the values
+            await reader.GuardAsync((int)EncodingType.SET);
+            var valReader = reader.CreateReader();
+            while (await valReader.ReadAsync())
+                attr.Values.Add(await valReader.ReadAsStringAsync());
+
+            return attr;
         }
 
         public async Task<T> ReadMessageContents<T>(LDAPReader messageReader, int messageId)

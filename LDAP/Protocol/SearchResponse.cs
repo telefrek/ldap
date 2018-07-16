@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Telefrek.LDAP.Protocol.Encoding;
 
@@ -11,7 +12,7 @@ namespace Telefrek.LDAP.Protocol
         public override bool IsTerminating => false;
 
         public string DistinguishedName { get; set; }
-        public LDAPAttribute[] Attributes { get; set; }
+        public LDAPAttribute[] Attributes { get; set; } = new LDAPAttribute[0];
 
         public override async Task ReadContentsAsync(LDAPReader reader)
         {
@@ -19,18 +20,10 @@ namespace Telefrek.LDAP.Protocol
 
             await msgReader.ReadAsync();
 
-            DistinguishedName = await reader.ReadAsStringAsync();
+            DistinguishedName = await msgReader.ReadAsStringAsync();
 
-            if(await msgReader.ReadAsync())
-            {
-                var attrReader = msgReader.CreateReader();
-                var attrList = new List<LDAPAttribute>();
-                while(await attrReader.ReadAsync())
-                {
-                    var attr = new LDAPAttribute();
-                    await attr.ReadContentsAsync(attrReader);
-                }
-            }
+            if (await msgReader.ReadAsync())
+                Attributes = (await msgReader.ReadPartialListAsync()).ToArray();
         }
     }
 }

@@ -61,7 +61,7 @@ namespace Telefrek.LDAP.Protocol.Encoding
         /// <param name="value">The value to write</param>
         /// <param name="tag">The tag for the value</param>
         public async Task WriteAsync(string value, int tag) => await WriteAsync(value, tag, EncodingScope.UNIVERSAL);
-
+       
         /// <summary>
         /// Writes a string value to the stream
         /// </summary>
@@ -74,6 +74,21 @@ namespace Telefrek.LDAP.Protocol.Encoding
             await EncodeHeaderAsync(tag, scope, true);
             await EncodeLengthAsync(buffer.Length);
             await _target.WriteAsync(buffer, 0, buffer.Length);
+        }
+        
+        public async Task WriteAsync(LDAPAttribute attr)
+        {
+            var attWriter = new LDAPWriter();
+
+            await attWriter.WriteAsync(attr.Description);
+
+            var valuesWriter = new LDAPWriter();
+            foreach (var value in attr.Values)
+                await valuesWriter.WriteAsync(value);
+
+            await attWriter.WriteAsync(valuesWriter, (int)EncodingType.SET);
+
+            await WriteAsync(attWriter);
         }
 
         /// <summary>

@@ -19,7 +19,7 @@ namespace Telefrek.LDAP.Protocol
 
             var attrWriter = new LDAPWriter();
             foreach (var attr in Attributes ?? new LDAPAttribute[] { })
-                await attr.WriteContentsAsync(attrWriter);
+                await attrWriter.WriteAsync(attr);
 
             await opWriter.WriteAsync(attrWriter);
 

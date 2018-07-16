@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Telefrek.LDAP
 {
     /// <summary>
@@ -9,5 +11,10 @@ namespace Telefrek.LDAP
         /// Gets/Sets the object DistinguishedName (DN)
         /// </summary>
         public string DistinguishedName { get; set; }
+
+        /// <summary>
+        /// Gets/Sets the list of attributes for the object
+        /// </summary>
+        public List<LDAPAttribute> Attributes { get; set; } = new List<LDAPAttribute>();
     }
 }

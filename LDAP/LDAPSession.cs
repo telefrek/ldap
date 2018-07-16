@@ -75,14 +75,14 @@ namespace Telefrek.LDAP
                     case ProtocolOp.SEARCH_RESPONSE:
                         var sResponse = msg as SearchResponse;
                         if (!string.IsNullOrWhiteSpace(sResponse.DistinguishedName))
-                            objList.Add(new LDAPObject { DistinguishedName = sResponse.DistinguishedName });
+                            objList.Add(new LDAPObject { DistinguishedName = sResponse.DistinguishedName, Attributes = new List<LDAPAttribute>(sResponse.Attributes) });
                         break;
                     case ProtocolOp.SEARCH_RESULT:
                         var sResult = msg as SearchResult;
                         result.ResultCode = (LDAPResultCode)sResult.ResultCode;
                         result.WasSuccessful = sResult.ResultCode == 0;
                         break;
-                        
+
                 }
             }
 
@@ -103,12 +103,12 @@ namespace Telefrek.LDAP
                 new LDAPAttribute
                 {
                     Description = "objectClass",
-                    Values = new string[] { "top", "person" }
+                    Values = new List<String>() { "top", "person" }
                 },
                 new LDAPAttribute
                 {
                     Description = "sn",
-                    Values = new string[] { "test" }
+                    Values = new List<String>() { "test" }
                 }
             };
 

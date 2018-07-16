@@ -32,6 +32,7 @@ namespace Telefrek.LDAP.Test
 
                 var mgr = new LDAPUserManager();
                 var res = await mgr.FindUserAsync("admin", "example.org", session, CancellationToken.None);
+
                 Assert.IsNotNull(res, "User shouldn't be null");
                 Assert.AreEqual("admin", res.Name, true, "Invalid user name");
                 Assert.AreEqual("example.org", res.Domain, true, "Invalid domain");

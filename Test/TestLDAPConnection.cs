@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Telefrek.LDAP.Managers;
 
 namespace Telefrek.LDAP.Test
 {
@@ -17,6 +18,32 @@ namespace Telefrek.LDAP.Test
         }
 
         public TestContext TestContext { get; set; }
+
+        [TestMethod]
+        public async Task TestUserManager()
+        {
+            try
+            {
+                var session = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
+                await session.StartAsync();
+
+                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
+                Assert.IsTrue(success, "Failed to login as admin");
+
+                var mgr = new LDAPUserManager();
+                var res = await mgr.FindUserAsync("admin", "example.org", session, CancellationToken.None);
+                Assert.IsNotNull(res, "User shouldn't be null");
+                Assert.AreEqual("admin", res.Name, true, "Invalid user name");
+                Assert.AreEqual("example.org", res.Domain, true, "Invalid domain");
+
+                await session.CloseAsync();
+            }
+            catch (LDAPException ldapEx)
+            {
+                TestContext.WriteLine("Invalid exception : {0}", ldapEx);
+                Assert.Fail("Unhandled exception");
+            }
+        }
 
         [TestMethod]
         public async Task TestSearch()
@@ -46,7 +73,6 @@ namespace Telefrek.LDAP.Test
                 Assert.Fail("Unhandled exception");
             }
         }
-
 
         [TestMethod]
         public async Task TestLifecycle()
@@ -92,6 +118,13 @@ namespace Telefrek.LDAP.Test
                 await session2.StartAsync();
                 var testLogin = await session2.TryLoginAsync(newObj.DistinguishedName, "testPassword", CancellationToken.None);
                 await session2.CloseAsync();
+
+                result = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, LDAPFilter.ALL_OBJECTS, new CancellationTokenSource(5000).Token);
+                Assert.AreEqual(LDAPResultCode.Success, result.ResultCode, "Expected successful search");
+
+                results = result.Objects.ToArray();
+                Assert.IsNotNull(results, "Expected object to be returned");
+                Assert.AreEqual(2, results.Length, "Expected 2 objects to be returned");
                 
                 success = await session.TryRemove("cn=test,dc=example,dc=org", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to remove the user");

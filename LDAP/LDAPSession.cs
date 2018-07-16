@@ -106,33 +106,28 @@ namespace Telefrek.LDAP
         /// <summary>
         /// Try to add a record to the directory
         /// </summary>
-        /// <param name="dn">The directory name</param>
+        /// <param name="obj">The LDAP entity to add</param>
         /// <param name="token"></param>
         /// <returns>True if successful</returns>
-        public async Task<bool> TryAdd(string dn, CancellationToken token)
+        public async Task<LDAPResult> TryAdd(LDAPObject obj, CancellationToken token)
         {
-            var op = new AddRequest { DistinguishedName = dn };
-            op.Attributes = new LDAPAttribute[]
+            var op = new AddRequest { DistinguishedName = obj.DistinguishedName, Attributes = obj.Attributes.ToArray() };
+            var objList = new List<LDAPObject>();
+            var result = new LDAPResult
             {
-                new LDAPAttribute
-                {
-                    Description = "objectClass",
-                    Values = new List<String>() { "top", "person" }
-                },
-                new LDAPAttribute
-                {
-                    Description = "sn",
-                    Values = new List<String>() { "test" }
-                }
+                Objects = objList,
+                IsStreaming = false,
             };
 
             foreach (var msg in await _connection.TryQueueOperation(op, token))
             {
-                var res = msg as LDAPResponse;
-                if (res != null) return res.ResultCode == 0;
+                result.ResultCode = (LDAPResultCode)msg.ResultCode;
+                result.WasSuccessful = msg.ResultCode == 0;
+                objList.Add(obj);
+                break;
             }
 
-            return false;
+            return result;
         }
 
         /// <summary>

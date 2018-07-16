@@ -15,6 +15,6 @@ namespace Telefrek.LDAP
         /// <summary>
         /// Gets/Sets the values
         /// </summary>
-        public List<string> Values { get; set; }
+        public List<string> Values { get; set; } = new List<string>();
     }
 }

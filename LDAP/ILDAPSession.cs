@@ -48,14 +48,13 @@ namespace Telefrek.LDAP
         /// <returns></returns>
         Task<LDAPResult> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, LDAPFilter filter, string[] attributes, CancellationToken token);
 
-
         /// <summary>
         /// Try to add a record to the directory
         /// </summary>
-        /// <param name="dn">The directory name</param>
+        /// <param name="obj">The LDAP Entity to add</param>
         /// <param name="token"></param>
         /// <returns>True if successful</returns>
-        Task<bool> TryAdd(string dn, CancellationToken token);
+        Task<LDAPResult> TryAdd(LDAPObject obj, CancellationToken token);
 
         /// <summary>
         /// Try to remove a record from the directory

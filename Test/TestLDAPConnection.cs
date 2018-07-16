@@ -28,7 +28,7 @@ namespace Telefrek.LDAP.Test
                 var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
-                var result = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, new CancellationTokenSource(5000).Token);
+                var result = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, LDAPFilter.ALL_OBJECTS, new CancellationTokenSource(5000).Token);
                 Assert.AreEqual(LDAPResultCode.Success, result.ResultCode, "Expected successful search");
                 
                 var results = result.Objects.ToArray();

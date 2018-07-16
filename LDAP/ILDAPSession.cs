@@ -31,9 +31,23 @@ namespace Telefrek.LDAP
         /// <param name="dn"></param>
         /// <param name="scope"></param>
         /// <param name="aliasing"></param>
+        /// <param name="filter"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        Task<LDAPResult> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, CancellationToken token);
+        Task<LDAPResult> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, LDAPFilter filter, CancellationToken token);
+
+        /// <summary>
+        /// Stub for now
+        /// </summary>
+        /// <param name="dn"></param>
+        /// <param name="scope"></param>
+        /// <param name="aliasing"></param>
+        /// <param name="filter"></param>
+        /// <param name="attributes"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        Task<LDAPResult> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, LDAPFilter filter, string[] attributes, CancellationToken token);
+
 
         /// <summary>
         /// Try to add a record to the directory

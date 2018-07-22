@@ -16,6 +16,7 @@ namespace Telefrek.LDAP.Protocol
         public int TimeLimit { get; set; } = 60;
         public bool TypesOnly { get; set; }
         public LDAPFilter Filter { get; set; } = LDAPFilter.ALL_OBJECTS;
+        public string[] Attributes { get; set; }
 
         public override bool HasResponse => true;
 
@@ -31,9 +32,19 @@ namespace Telefrek.LDAP.Protocol
             await opWriter.WriteAsync(TypesOnly);
 
             // Encode filters here
-            await opWriter.WriteAsync("cn", 7, EncodingScope.CONTEXT_SPECIFIC);
+            await opWriter.WriteAsync(Filter);
 
-            await opWriter.WriteNullAsync(); // attributes
+            // Attributes
+            if (Attributes == null || Attributes.Length == 0)
+                await opWriter.WriteNullAsync();
+            else
+            {
+                var atWriter = new LDAPWriter();
+                foreach (var s in Attributes)
+                    await atWriter.WriteAsync(s);
+
+                await opWriter.WriteAsync(atWriter);
+            }
 
             await writer.WriteAsync(opWriter, 3, EncodingScope.APPLICATION);
         }

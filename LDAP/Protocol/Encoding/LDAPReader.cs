@@ -160,9 +160,13 @@ namespace Telefrek.LDAP.Protocol.Encoding
                     return await ReadMessageContents<SearchResult>(messageReader, messageId);
                 case ProtocolOp.ADD_RESPONSE:
                     return await ReadMessageContents<AddResponse>(messageReader, messageId);
+                case ProtocolOp.MODIFY_RESPONSE:
+                    return await ReadMessageContents<ModifyResponse>(messageReader, messageId);
                 case ProtocolOp.DEL_RESPONSE:
                     return await ReadMessageContents<DeleteResponse>(messageReader, messageId);
                 default:
+                    // Bypass this message
+                    await messageReader.SkipAsync();
                     throw new LDAPProtocolException("Unknown/Invalid protocol operation");
             }
         }

@@ -57,12 +57,23 @@ namespace Telefrek.LDAP
         Task<LDAPResult> TryAdd(LDAPObject obj, CancellationToken token);
 
         /// <summary>
-        /// Try to remove a record from the directory
+        /// Try to add a record to the directory
         /// </summary>
-        /// <param name="dn">The directory name</param>
+        /// <param name="obj">The LDAP Entity to add</param>
+        /// <param name="add"></param>
+        /// <param name="remove"></param>
+        /// <param name="update"></param>
         /// <param name="token"></param>
         /// <returns>True if successful</returns>
-        Task<bool> TryRemove(string dn, CancellationToken token);
+        Task<LDAPResult> TryModify(LDAPObject obj, ICollection<LDAPAttribute> add, ICollection<LDAPAttribute> remove, ICollection<LDAPAttribute> update, CancellationToken token);
+
+        /// <summary>
+        /// Try to remove a record from the directory
+        /// </summary>
+        /// <param name="obj">The record to remove</param>
+        /// <param name="token"></param>
+        /// <returns>True if successful</returns>
+        Task<LDAPResult> TryRemove(LDAPObject obj, CancellationToken token);
 
         /// <summary>
         /// Ends the session and closes all resources asynchronously

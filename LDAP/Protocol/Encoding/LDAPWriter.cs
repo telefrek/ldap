@@ -61,7 +61,7 @@ namespace Telefrek.LDAP.Protocol.Encoding
         /// <param name="value">The value to write</param>
         /// <param name="tag">The tag for the value</param>
         public async Task WriteAsync(string value, int tag) => await WriteAsync(value, tag, EncodingScope.UNIVERSAL);
-       
+
         /// <summary>
         /// Writes a string value to the stream
         /// </summary>
@@ -75,7 +75,55 @@ namespace Telefrek.LDAP.Protocol.Encoding
             await EncodeLengthAsync(buffer.Length);
             await _target.WriteAsync(buffer, 0, buffer.Length);
         }
-        
+
+        public async Task WriteAsync(LDAPFilter filter)
+        {
+            switch (filter.FilterType)
+            {
+                case LDAPFilterType.Add:
+                case LDAPFilterType.Or:
+                case LDAPFilterType.Not:
+                    var bWriter = new LDAPWriter();
+                    foreach (var f in filter.Children)
+                        await bWriter.WriteAsync(f);
+                    await WriteAsync(bWriter, (int)filter.FilterType, EncodingScope.CONTEXT_SPECIFIC);
+                    break;
+                case LDAPFilterType.Substring:
+                    var subWriter = new LDAPWriter();
+                    await subWriter.WriteAsync(filter.Description);
+                    var subSequenceWriter = new LDAPWriter();
+                    foreach (var sub in filter.Substrings)
+                        await subSequenceWriter.WriteAsync(sub.Value, (int)sub.SubstringType, EncodingScope.CONTEXT_SPECIFIC);
+                    await subWriter.WriteAsync(subSequenceWriter);
+                    await WriteAsync(subWriter, (int)filter.FilterType, EncodingScope.CONTEXT_SPECIFIC);
+                    break;
+                case LDAPFilterType.EqualityMatch:
+                case LDAPFilterType.GreaterOrEqual:
+                case LDAPFilterType.LessOrEqual:
+                case LDAPFilterType.ApproximateMatch:
+                    var valWriter = new LDAPWriter();
+                    await valWriter.WriteAsync(filter.Description);
+                    await valWriter.WriteAsync(filter.Value);
+                    await WriteAsync(valWriter, (int)filter.FilterType, EncodingScope.CONTEXT_SPECIFIC);
+                    break;
+                case LDAPFilterType.Present:
+                    await WriteAsync(filter.Description, (int)filter.FilterType, EncodingScope.CONTEXT_SPECIFIC);
+                    break;
+                case LDAPFilterType.ExtensibleMatch:
+                    var eWriter = new LDAPWriter();
+                    if (!string.IsNullOrEmpty(filter.MatchingRule))
+                        await eWriter.WriteAsync(filter.MatchingRule, 1, EncodingScope.CONTEXT_SPECIFIC);
+                    if (!string.IsNullOrEmpty(filter.Description))
+                        await eWriter.WriteAsync(filter.Description, 2, EncodingScope.CONTEXT_SPECIFIC);
+                    await eWriter.WriteAsync(filter.Value, 3, EncodingScope.CONTEXT_SPECIFIC);
+                    await eWriter.WriteAsync(filter.AllAttributes, 4, EncodingScope.CONTEXT_SPECIFIC);
+                    await WriteAsync(eWriter, (int)filter.FilterType, EncodingScope.CONTEXT_SPECIFIC);
+                    break;
+                default:
+                    throw new LDAPProtocolException("Unsupported filter type: {0}".Format(filter.FilterType));
+            }
+        }
+
         public async Task WriteAsync(LDAPAttribute attr)
         {
             var attWriter = new LDAPWriter();

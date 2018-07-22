@@ -9,8 +9,16 @@ namespace Telefrek.LDAP
     /// <summary>
     /// Extendions for easy integration with aspnet core
     /// </summary>
-    public static class AspExtensions
+    public static class LDAPExtensions
     {
+        /// <summary>
+        /// Formats a string in place
+        /// </summary>
+        /// <param name="format">The format string to use</param>
+        /// <param name="data">The parameters to use for the format string</param>
+        /// <returns>A formatted string</returns>
+        public static string Format(this string format, params object[] data) => string.Format(format, data);
+        
         /// <summary>
         /// Add LDAP Authentication into the pipeline, still requires enabling in user auth
         /// </summary>

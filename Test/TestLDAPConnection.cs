@@ -127,8 +127,8 @@ namespace Telefrek.LDAP.Test
                 Assert.IsNotNull(results, "Expected object to be returned");
                 Assert.AreEqual(2, results.Length, "Expected 2 objects to be returned");
                 
-                success = await session.TryRemove("cn=test,dc=example,dc=org", CancellationToken.None);
-                Assert.IsTrue(success, "Failed to remove the user");
+                result = await session.TryRemove(newObj, CancellationToken.None);
+                Assert.IsTrue(result.WasSuccessful, "Failed to remove the user");
 
                 await session.CloseAsync();
 

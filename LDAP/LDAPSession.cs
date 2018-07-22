@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
@@ -74,7 +75,7 @@ namespace Telefrek.LDAP
         /// <returns></returns>
         public async Task<LDAPResult> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, LDAPFilter filter, string[] attributes, CancellationToken token)
         {
-            var op = new SearchRequest { DistinguishedName = dn, Scope = scope, Aliasing = aliasing };
+            var op = new SearchRequest { DistinguishedName = dn, Scope = scope, Aliasing = aliasing, Filter = filter, Attributes = attributes };
             var objList = new List<LDAPObject>();
             var result = new LDAPResult
             {
@@ -131,22 +132,88 @@ namespace Telefrek.LDAP
         }
 
         /// <summary>
-        /// Try to remove a record from the directory
+        /// Try to add a record to the directory
         /// </summary>
-        /// <param name="dn">The directory name</param>
+        /// <param name="obj">The LDAP Entity to add</param>
+        /// <param name="add"></param>
+        /// <param name="remove"></param>
+        /// <param name="update"></param>
         /// <param name="token"></param>
         /// <returns>True if successful</returns>
-        public async Task<bool> TryRemove(string dn, CancellationToken token)
+        public async Task<LDAPResult> TryModify(LDAPObject obj, ICollection<LDAPAttribute> add, ICollection<LDAPAttribute> remove, ICollection<LDAPAttribute> update, CancellationToken token)
         {
-            var op = new DeleteRequest { DistinguishedName = dn };
+            var op = new ModifyRequest { DistinguishedName = obj.DistinguishedName };
+
+            if (add != null && add.Count > 0)
+                op.Added = add.ToArray();
+
+            if (remove != null && remove.Count > 0)
+                op.Removed = remove.ToArray();
+
+            if (update != null && update.Count > 0)
+                op.Modified = update.ToArray();
+
+            var objList = new List<LDAPObject>();
+            var result = new LDAPResult
+            {
+                Objects = objList,
+                IsStreaming = false,
+            };
 
             foreach (var msg in await _connection.TryQueueOperation(op, token))
             {
-                var res = msg as LDAPResponse;
-                if (res != null) return res.ResultCode == 0;
+                result.ResultCode = (LDAPResultCode)msg.ResultCode;
+                result.WasSuccessful = msg.ResultCode == 0;
+
+                // Modify the attributes
+                if (result.WasSuccessful)
+                {
+                    foreach (var attr in add ?? new List<LDAPAttribute>())
+                        obj.Attributes.Add(attr);
+
+                    foreach (var attr in update ?? new List<LDAPAttribute>())
+                    {
+                        obj.Attributes.RemoveAll((p) => p.Description.Equals(attr.Description));
+                        obj.Attributes.Add(attr);
+                    }
+
+                    foreach (var attr in remove ?? new List<LDAPAttribute>())
+                        obj.Attributes.RemoveAll((p) => p.Description.Equals(attr.Description));
+                }
+
+                objList.Add(obj);
+                break;
             }
 
-            return false;
+            return result;
+        }
+
+
+        /// <summary>
+        /// Try to remove a record from the directory
+        /// </summary>
+        /// <param name="obj">The entity to remove</param>
+        /// <param name="token"></param>
+        /// <returns>True if successful</returns>
+        public async Task<LDAPResult> TryRemove(LDAPObject obj, CancellationToken token)
+        {
+            var op = new DeleteRequest { DistinguishedName = obj.DistinguishedName };
+            var objList = new List<LDAPObject>();
+            var result = new LDAPResult
+            {
+                Objects = objList,
+                IsStreaming = false,
+            };
+
+            foreach (var msg in await _connection.TryQueueOperation(op, token))
+            {
+                result.ResultCode = (LDAPResultCode)msg.ResultCode;
+                result.WasSuccessful = msg.ResultCode == 0;
+                objList.Add(obj);
+                break;
+            }
+
+            return result;
         }
 
 

@@ -17,6 +17,11 @@ namespace Telefrek.LDAP.Test
             public LDAPConfiguration Value => this;
         }
 
+        class TestManagerOptions : LDAPManagerConfiguration, IOptions<LDAPManagerConfiguration>
+        {
+            public LDAPManagerConfiguration Value => this;
+        }
+
         public TestContext TestContext { get; set; }
 
         [TestMethod]
@@ -30,12 +35,38 @@ namespace Telefrek.LDAP.Test
                 var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
-                var mgr = new LDAPUserManager();
-                var res = await mgr.FindUserAsync("admin", "example.org", session, CancellationToken.None);
+                var mgr = new LDAPUserManager(new TestManagerOptions(), session);
+                var res = await mgr.FindUserAsync("admin", "example.org", CancellationToken.None);
 
                 Assert.IsNotNull(res, "User shouldn't be null");
                 Assert.AreEqual("admin", res.Name, true, "Invalid user name");
                 Assert.AreEqual("example.org", res.Domain, true, "Invalid domain");
+
+                await session.CloseAsync();
+            }
+            catch (LDAPException ldapEx)
+            {
+                TestContext.WriteLine("Invalid exception : {0}", ldapEx);
+                Assert.Fail("Unhandled exception");
+            }
+        }
+
+        [TestMethod]
+        public async Task TestSchemaManager()
+        {
+            try
+            {
+                var session = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
+                await session.StartAsync();
+
+                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
+                Assert.IsTrue(success, "Failed to login as admin");
+
+                var mgr = new LDAPSchemaManager(session);
+                var res = await mgr.ListGroupsAsync(CancellationToken.None);
+
+                Assert.IsNotNull(res, "User shouldn't be null");
+                Assert.IsTrue(res.Count > 0, "Groups should be returned");
 
                 await session.CloseAsync();
             }

@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Telefrek.LDAP;
@@ -36,9 +38,14 @@ namespace Demo
             services.AddLDAPAuth(Configuration);
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc(config=>            
+            {
+                var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+                config.Filters.Add(new AuthorizeFilter(policy));
+            });
             services.AddMvc().AddRazorOptions(options =>
             {
-                options.PageViewLocationFormats.Add("/Pages/Partials/{0}.cshtml");
+                options.PageViewLocationFormats.Add("/Pages/Partials/{0}.cshtml");                
             });
         }
 

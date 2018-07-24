@@ -10,6 +10,15 @@ namespace Telefrek.LDAP
     /// </summary>
     public interface ILDAPSession : IDisposable
     {
+        /// <summary>
+        /// Gets the current session state
+        /// </summary>
+        LDAPSessionState State { get; }
+
+        /// <summary>
+        /// Gets the currently bound object scope
+        /// </summary>
+        string CurrentScope { get; }
 
         /// <summary>
         /// Starts the session asynchronously
@@ -23,7 +32,7 @@ namespace Telefrek.LDAP
         /// <param name="credentials">The associated credentials</param>
         /// <param name="token"></param>
         /// <returns>True if the login was successful</returns>
-        Task<bool> TryLoginAsync(string domainUser, string credentials, CancellationToken token);
+        Task<bool> TryBindAsync(string domainUser, string credentials, CancellationToken token);
 
         /// <summary>
         /// Stub for now

@@ -8,6 +8,7 @@ namespace Telefrek.LDAP.Protocol.IO
 {
     internal interface ILDAPConnection : IDisposable
     {
+        LDAPConnectionState State { get; }
         Task ConnectAsync(string host, int port);
         Task CloseAsync();
         Task<IEnumerable<LDAPResponse>> TryQueueOperation(LDAPRequest request, CancellationToken token);

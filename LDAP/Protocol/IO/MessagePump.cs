@@ -118,11 +118,7 @@ namespace Telefrek.LDAP.Protocol.IO
 
         void Dispose(bool isDisposing)
         {
-            if (isDisposing && !_isDisposed)
-            {
-
-            }
-
+            _isClosed = true;
             _isDisposed = true;
         }
     }

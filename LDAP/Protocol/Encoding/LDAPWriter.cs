@@ -107,7 +107,8 @@ namespace Telefrek.LDAP.Protocol.Encoding
                     await WriteAsync(valWriter, (int)filter.FilterType, EncodingScope.CONTEXT_SPECIFIC);
                     break;
                 case LDAPFilterType.Present:
-                    await WriteAsync(filter.Description, (int)filter.FilterType, EncodingScope.CONTEXT_SPECIFIC);
+                    var desc = string.IsNullOrEmpty(filter.Value) ? filter.Description : "{0}={1}".ToFormat(filter.Description, filter.Value);
+                    await WriteAsync(desc, (int)filter.FilterType, EncodingScope.CONTEXT_SPECIFIC);
                     break;
                 case LDAPFilterType.ExtensibleMatch:
                     var eWriter = new LDAPWriter();
@@ -120,7 +121,7 @@ namespace Telefrek.LDAP.Protocol.Encoding
                     await WriteAsync(eWriter, (int)filter.FilterType, EncodingScope.CONTEXT_SPECIFIC);
                     break;
                 default:
-                    throw new LDAPProtocolException("Unsupported filter type: {0}".Format(filter.FilterType));
+                    throw new LDAPProtocolException("Unsupported filter type: {0}".ToFormat(filter.FilterType));
             }
         }
 

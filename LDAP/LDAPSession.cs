@@ -7,6 +7,15 @@ using Microsoft.Extensions.Options;
 using Telefrek.LDAP.Protocol;
 using Telefrek.LDAP.Protocol.IO;
 
+/*
+TODO:
+
+Add Controls
+Add Move
+Add Unbind
+
+ */
+
 namespace Telefrek.LDAP
 {
     /// <summary>
@@ -16,6 +25,8 @@ namespace Telefrek.LDAP
     {
         ILDAPConnection _connection;
         LDAPConfiguration _options;
+        string _current;
+        LDAPSessionState _state;
 
         /// <summary>
         /// Default constructor
@@ -23,14 +34,34 @@ namespace Telefrek.LDAP
         /// <param name="options">Options for LDAP communication</param>
         public LDAPSession(IOptions<LDAPConfiguration> options)
         {
+            // Sessions start closed
+            _state = LDAPSessionState.Closed;
+
             _options = options.Value;
             _connection = new LDAPConnection(_options.IsSecured);
         }
 
         /// <summary>
+        /// Gets the current ssession state
+        /// </summary>
+        public LDAPSessionState State => _state;
+
+        /// <summary>
+        /// Gets the currently bound object scope
+        /// </summary>
+        public string CurrentScope => _current;
+
+        /// <summary>
         /// Starts the session asynchronously
         /// </summary>
-        public async Task StartAsync() => await _connection.ConnectAsync(_options.Host, _options.Port);
+        public async Task StartAsync()
+        {
+            // Only start the connection if not initialized
+            if (_state == LDAPSessionState.Closed || _connection.State == LDAPConnectionState.NotInitialized)
+                await _connection.ConnectAsync(_options.Host, _options.Port);
+
+            _state = LDAPSessionState.Open;
+        }
 
         /// <summary>
         /// Attempts a login with the given credentials
@@ -39,13 +70,18 @@ namespace Telefrek.LDAP
         /// <param name="credentials">The associated credentials</param>
         /// <param name="token"></param>
         /// <returns>True if the login was successful</returns>
-        public async Task<bool> TryLoginAsync(string domainUser, string credentials, CancellationToken token)
+        public async Task<bool> TryBindAsync(string domainUser, string credentials, CancellationToken token)
         {
             var op = new BindRequest { Name = domainUser, Authentication = new SimpleAuthentication { Credentials = credentials } };
             foreach (var msg in await _connection.TryQueueOperation(op, token))
             {
                 var res = msg as LDAPResponse;
-                if (res != null) return res.ResultCode == 0;
+                if (res != null && res.ResultCode == 0)
+                {
+                    _state = LDAPSessionState.Bound;
+                    _current = res.MatchedDN;
+                    return true;
+                }
             }
 
             return false;
@@ -228,6 +264,8 @@ namespace Telefrek.LDAP
         {
             await _connection.CloseAsync();
             Dispose();
+            
+            _state = LDAPSessionState.Closed;
         }
 
         /// <summary>

@@ -22,6 +22,7 @@ namespace Telefrek.LDAP.Protocol.IO
         SslStream _transport;
         NetworkStream _raw;
         MessagePump _pump;
+        LDAPConnectionState _state;
         int _messageId = 0;
         bool _sslEnabled;
 
@@ -34,7 +35,10 @@ namespace Telefrek.LDAP.Protocol.IO
             _conn = new TcpClient();
             _sslEnabled = sslEnabled;
             _transport = null;
+            _state = LDAPConnectionState.NotInitialized;
         }
+
+        public LDAPConnectionState State => _state;
 
         /// <summary>
         /// Connect to the given host on the port asynchronously
@@ -43,6 +47,10 @@ namespace Telefrek.LDAP.Protocol.IO
         /// <param name="port">The port to use for communication</param>
         public async Task ConnectAsync(string host, int port)
         {
+            // Don't reconnect
+            if(_state == LDAPConnectionState.Connected)
+                return;
+
             try
             {
                 await _conn.ConnectAsync(host, port);
@@ -82,17 +90,28 @@ namespace Telefrek.LDAP.Protocol.IO
                 // Create the pump and start it
                 _pump = new MessagePump(Reader, _raw);
                 _pump.Start();
+                _state = LDAPConnectionState.Connected;
             }
             catch (Exception e)
             {
+                _state = LDAPConnectionState.Faulted;
                 throw new LDAPException("Failed to connect", e);
             }
         }
 
         public async Task CloseAsync()
         {
+            // Should probably throw if this is not the case
+            if(_state != LDAPConnectionState.Connected)
+                return;
+
             await TryQueueOperation(new UnbindRequest(), CancellationToken.None);
-            await _pump.StopAsync();
+            if (_pump != null)
+            {
+                await _pump.StopAsync();
+                _pump.Dispose();
+            }
+            _state = LDAPConnectionState.Closed;
         }
 
         public async Task<IEnumerable<LDAPResponse>> TryQueueOperation(LDAPRequest request, CancellationToken token)
@@ -138,6 +157,9 @@ namespace Telefrek.LDAP.Protocol.IO
         {
             if (disposing && !_isDisposed)
             {
+                if (_pump != null)
+                    _pump.Dispose();
+
                 if (_transport != null)
                 {
                     _transport.Flush();
@@ -155,6 +177,7 @@ namespace Telefrek.LDAP.Protocol.IO
                 _transport = null;
                 _raw = null;
                 _conn = null;
+                _pump = null;
 
                 // Notify GC to ignore
                 GC.SuppressFinalize(this);

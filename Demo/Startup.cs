@@ -34,15 +34,8 @@ namespace Demo
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            // Add the ldap auth
-            services.AddLDAPAuth(Configuration);
-
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-            services.AddMvc(config=>            
-            {
-                var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
-                config.Filters.Add(new AuthorizeFilter(policy));
-            });
+            
             services.AddMvc().AddRazorOptions(options =>
             {
                 options.PageViewLocationFormats.Add("/Pages/Partials/{0}.cshtml");                
@@ -60,8 +53,7 @@ namespace Demo
             //app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
-            app.UseAuthentication();
-
+            app.UseLDAPAuth();
             app.UseMvc();
 
             app.Run(async (context) =>

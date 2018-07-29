@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Concurrent;
+using System.Collections;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Telefrek.LDAP.Protocol;
-using Telefrek.LDAP.Protocol.Collections;
 using Telefrek.LDAP.Protocol.Encoding;
 
 namespace Telefrek.LDAP.Protocol.IO
@@ -18,9 +16,10 @@ namespace Telefrek.LDAP.Protocol.IO
         Task _pumpThread;
         LDAPReader _reader;
         NetworkStream _raw;
-
-        ConcurrentDictionary<int, StreamingEnumerator<LDAPResponse>> _completions =
-            new ConcurrentDictionary<int, StreamingEnumerator<LDAPResponse>>();
+        MessagePumpNode _head;
+        MessagePumpNode _tail;
+        AutoResetEvent _event;
+        long _size;
 
         volatile bool _isClosed = false;
 
@@ -33,6 +32,9 @@ namespace Telefrek.LDAP.Protocol.IO
         {
             _reader = reader;
             _raw = raw;
+            _head = new MessagePumpNode();
+            _tail = null;
+            _event = new AutoResetEvent(false);
         }
 
         /// <summary>
@@ -57,21 +59,9 @@ namespace Telefrek.LDAP.Protocol.IO
             await _pumpThread;
         }
 
-        public IEnumerable<LDAPResponse> GetResponse(int messageId)
-        {
+        public IEnumerable<LDAPResponse> GetResponse(int messageId, CancellationToken token) =>
             // Create the source and register the cancellation token if supplied
-            var e = new StreamingEnumerator<LDAPResponse>();
-
-            // register the callback
-            _completions.AddOrUpdate(messageId, e, (msgId, old) =>
-            {
-                old.Close();
-                return e;
-            });
-
-            // Return the enumeration
-            return e;
-        }
+            new MessagePumpEnumerator(_head, _event, messageId);
 
         /// <summary>
         /// public method to watch the reader and notify when new messages are available
@@ -90,14 +80,29 @@ namespace Telefrek.LDAP.Protocol.IO
                             // read the next operation available
                             var message = await _reader.ReadResponseAsync();
 
-                            // Send this message along
-                            StreamingEnumerator<LDAPResponse> e;
-                            if (_completions.TryGetValue(message.MessageId, out e))
-                                e.Add(message);
+                            if (message != null)
+                            {
+                                if (_size == 0) // new
+                                {
+                                    _head.Message = message;
+                                    _tail = _head;
+                                    _size = 1;
+                                }
+                                else if (_size >= 16)
+                                {
+                                    _head = _head.Next;
+                                    _tail.Next = new MessagePumpNode { Message = message, Next = null };
+                                    _tail = _tail.Next;
+                                }
+                                else
+                                {
+                                    _tail.Next = new MessagePumpNode { Message = message, Next = null };
+                                    _tail = _tail.Next;
+                                    _size++;
+                                }
 
-                            // Close the stream, not more objects are coming
-                            if (message.IsTerminating && _completions.TryRemove(message.MessageId, out e))
-                                e.Close();
+                                _event.Set();
+                            }
                         }
                     }
                     catch (LDAPException)
@@ -121,5 +126,64 @@ namespace Telefrek.LDAP.Protocol.IO
             _isClosed = true;
             _isDisposed = true;
         }
+    }
+
+    internal class MessagePumpNode
+    {
+        public LDAPResponse Message { get; set; }
+        public MessagePumpNode Next { get; set; }
+    }
+
+    internal class MessagePumpEnumerator : IEnumerable<LDAPResponse>, IEnumerator<LDAPResponse>
+    {
+        EventWaitHandle _event;
+        MessagePumpNode _node;
+        int _messageId;
+
+        public MessagePumpEnumerator(MessagePumpNode node, EventWaitHandle evt, int messageId)
+        {
+            _node = node;
+            _event = evt;
+            _messageId = messageId;
+        }
+
+        public LDAPResponse Current { get; set; } = null;
+
+        object IEnumerator.Current => Current;
+
+        public void Dispose()
+        {
+        }
+
+        public IEnumerator<LDAPResponse> GetEnumerator() => this;
+
+        public bool MoveNext()
+        {
+            // No messages yet, keep reading until we find one
+            if (Current != null && Current.IsTerminating)
+                return false;
+
+            // Keep going until we find another message
+            while (true)
+            {
+                if (_node.Message == null)
+                    _event.WaitOne();
+
+                if (_node.Message != Current && _node.Message.MessageId == _messageId)
+                {
+                    Current = _node.Message;
+                    return true;
+                }
+
+                if (_node.Next != null)
+                    _node = _node.Next;
+                else
+                    _event.WaitOne();
+            }
+        }
+
+        public void Reset() => throw new InvalidOperationException();
+
+        IEnumerator IEnumerable.GetEnumerator() => this;
     }
 }

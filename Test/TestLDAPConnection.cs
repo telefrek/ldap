@@ -32,7 +32,7 @@ namespace Telefrek.LDAP.Test
                 var session = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
+                var success = await session.TryBindAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
                 var mgr = new LDAPUserManager(new TestManagerOptions(), session);
@@ -59,7 +59,7 @@ namespace Telefrek.LDAP.Test
                 var session = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
+                var success = await session.TryBindAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
                 var mgr = new LDAPSchemaManager(session);
@@ -85,7 +85,7 @@ namespace Telefrek.LDAP.Test
                 var session = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
+                var success = await session.TryBindAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
                 var result = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, LDAPFilter.ALL_OBJECTS, new CancellationTokenSource(5000).Token);
@@ -114,7 +114,7 @@ namespace Telefrek.LDAP.Test
                 var session = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
+                var success = await session.TryBindAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
                 var result = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, LDAPFilter.ALL_OBJECTS, new CancellationTokenSource(5000).Token);
@@ -148,7 +148,7 @@ namespace Telefrek.LDAP.Test
 
                 var session2 = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
                 await session2.StartAsync();
-                var testLogin = await session2.TryLoginAsync(newObj.DistinguishedName, "testPassword", CancellationToken.None);
+                var testLogin = await session2.TryBindAsync(newObj.DistinguishedName, "testPassword", CancellationToken.None);
                 await session2.CloseAsync();
 
                 result = await session.TrySearch("dc=example,dc=org", LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, LDAPFilter.ALL_OBJECTS, new CancellationTokenSource(5000).Token);
@@ -180,13 +180,13 @@ namespace Telefrek.LDAP.Test
                 var session = new LDAPSession(new TestOptions { Port = 10389, IsSecured = false, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("", "", CancellationToken.None);
+                var success = await session.TryBindAsync("", "", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as anonymous");
 
-                success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
+                success = await session.TryBindAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
-                success = await session.TryLoginAsync("cn=test,dc=example,dc=org", "password", CancellationToken.None);
+                success = await session.TryBindAsync("cn=test,dc=example,dc=org", "password", CancellationToken.None);
                 Assert.IsFalse(success, "User login should have failed");
 
                 await session.CloseAsync();
@@ -206,13 +206,13 @@ namespace Telefrek.LDAP.Test
                 var session = new LDAPSession(new TestOptions { Port = 10636, IsSecured = true, });
                 await session.StartAsync();
 
-                var success = await session.TryLoginAsync("", "", CancellationToken.None);
+                var success = await session.TryBindAsync("", "", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as anonymous");
 
-                success = await session.TryLoginAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
+                success = await session.TryBindAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
                 Assert.IsTrue(success, "Failed to login as admin");
 
-                success = await session.TryLoginAsync("cn=test,dc=example,dc=org", "password", CancellationToken.None);
+                success = await session.TryBindAsync("cn=test,dc=example,dc=org", "password", CancellationToken.None);
                 Assert.IsFalse(success, "User login should have failed");
 
                 await session.CloseAsync();

@@ -7,7 +7,7 @@ namespace Demo.Entities
         [Required]
         public string Username { get; set; }
         [Required]
-        public string Domain { get; set; } = "example.com";
+        public string Domain { get; set; } = "example.org";
         [Required]
         [DataType(DataType.Password)]
         public string Credentials { get; set; }

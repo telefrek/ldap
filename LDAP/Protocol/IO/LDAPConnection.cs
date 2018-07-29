@@ -122,7 +122,7 @@ namespace Telefrek.LDAP.Protocol.IO
             {
                 if (request.HasResponse)
                 {
-                    var response = _pump.GetResponse(request.MessageId);
+                    var response = _pump.GetResponse(request.MessageId, token);
                     await request.WriteAsync(Writer);
 
                     return response;

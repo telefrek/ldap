@@ -3,8 +3,10 @@ using System.Text;
 using System.Threading;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Telefrek.LDAP.Managers;
@@ -50,9 +52,14 @@ namespace Telefrek.LDAP
         {
             services.Configure<LDAPConfiguration>(config.GetSection("ldap"));
             services.Configure<LDAPManagerConfiguration>(config.GetSection("ldap_mgmt"));
-            services.AddScoped<ILDAPSession, LDAPSession>();
+            services.AddTransient<ILDAPSession, LDAPSession>();
             services.AddScoped<ILDAPUserManager, LDAPUserManager>();
             services.AddScoped<ILDAPSchemaManager, LDAPSchemaManager>();
+            services.AddMvc(options=>            
+            {
+                var policy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+                options.Filters.Add(new AuthorizeFilter(policy));
+            });
 
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                .AddCookie(options =>
@@ -71,9 +78,6 @@ namespace Telefrek.LDAP
         /// </summary>
         /// <param name="builder">The current application builder</param>
         /// <returns>The modified application builder</returns>
-        public static IApplicationBuilder UseLDAPAuth(this IApplicationBuilder builder)
-        {
-            return builder;
-        }
+        public static IApplicationBuilder UseLDAPAuth(this IApplicationBuilder builder) => builder.UseAuthentication();
     }
 }

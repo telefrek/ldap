@@ -1,20 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Telefrek.LDAP.Protocol;
 using Telefrek.LDAP.Protocol.IO;
-
-/*
-TODO:
-
-Add Controls
-Add Move
-Add Unbind
-
- */
 
 namespace Telefrek.LDAP
 {
@@ -25,7 +17,7 @@ namespace Telefrek.LDAP
     {
         ILDAPConnection _connection;
         LDAPConfiguration _options;
-        string _current;
+        LDAPObject _current;
         LDAPSessionState _state;
 
         /// <summary>
@@ -49,7 +41,7 @@ namespace Telefrek.LDAP
         /// <summary>
         /// Gets the currently bound object scope
         /// </summary>
-        public string CurrentScope => _current;
+        public LDAPObject CurrentScope => _current;
 
         /// <summary>
         /// Starts the session asynchronously
@@ -75,11 +67,17 @@ namespace Telefrek.LDAP
             var op = new BindRequest { Name = domainUser, Authentication = new SimpleAuthentication { Credentials = credentials } };
             foreach (var msg in await _connection.TryQueueOperation(op, token))
             {
-                var res = msg as LDAPResponse;
+                var res = msg as BindResponse;
                 if (res != null && res.ResultCode == 0)
                 {
                     _state = LDAPSessionState.Bound;
-                    _current = res.MatchedDN;
+                    var dn = res.MatchedDN;
+                    _current = new LDAPObject
+                    {
+                        DistinguishedName = dn,
+                        Domain = string.Join(",", dn.Split(',')
+                            .Where(s => s.StartsWith("dc=", true, CultureInfo.InvariantCulture)).ToArray())
+                    };
                     return true;
                 }
             }
@@ -264,7 +262,7 @@ namespace Telefrek.LDAP
         {
             await _connection.CloseAsync();
             Dispose();
-            
+
             _state = LDAPSessionState.Closed;
         }
 

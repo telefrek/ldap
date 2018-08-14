@@ -60,7 +60,7 @@ namespace Telefrek.LDAP.Test
                 await session.StartAsync();
 
                 var success = await session.TryBindAsync("cn=admin,dc=example,dc=org", "admin", CancellationToken.None);
-                Assert.IsTrue(success, "Failed to login as admin");
+                Assert.IsTrue(success, "Failed to login as config");
 
                 var mgr = new LDAPSchemaManager(session);
                 var res = await mgr.ListGroupsAsync(CancellationToken.None);
@@ -92,10 +92,17 @@ namespace Telefrek.LDAP.Test
                 Assert.AreEqual(LDAPResultCode.Success, result.ResultCode, "Expected successful search");
 
                 var results = result.Objects.ToArray();
+                foreach(var obj in result.Objects)
+                {
+                    TestContext.WriteLine("DN: {0}", obj.DistinguishedName);
+                    foreach(var attr in obj.Attributes)
+                    {
+                        TestContext.WriteLine("{0} : {1}", attr.Description, string.Join(';', attr.Values.ToArray()));
+                    }
+                }
                 Assert.IsNotNull(results, "Expected object to be returned");
-                Assert.AreEqual(1, results.Length, "Expected 1 object to be returned");
-                Assert.AreEqual("cn=admin,dc=example,dc=org", results[0].DistinguishedName, true, "mismatch DN");
-                Assert.AreEqual(4, results[0].Attributes.Count, "Wrong number of attributes for default object");
+                Assert.AreEqual(2, results.Length, "Expected 2 objects to be returned");
+                Assert.IsNotNull(result.Objects.FirstOrDefault(obj=>obj.DistinguishedName.Equals("cn=admin,dc=example,dc=org")), "Failed to locate admin");
 
                 await session.CloseAsync();
             }

@@ -14,6 +14,11 @@ namespace Telefrek.LDAP
         public string DistinguishedName { get; set; }
 
         /// <summary>
+        /// The root domain for the object
+        /// </summary>
+        public string Domain { get; set; }
+
+        /// <summary>
         /// Gets/Sets the list of attributes for the object
         /// </summary>
         public List<LDAPAttribute> Attributes { get; set; } = new List<LDAPAttribute>();
@@ -27,11 +32,13 @@ namespace Telefrek.LDAP
             // Create clone of current
             var clone = new LDAPObject
             {
-                DistinguishedName = DistinguishedName
+                DistinguishedName = DistinguishedName,
+                Domain = Domain,
             };
 
             // Force copy of objects (slow but prevents references)
-            clone.Attributes.AddRange(Attributes.Select(a=>{
+            clone.Attributes.AddRange(Attributes.Select(a =>
+            {
                 var a1 = new LDAPAttribute { Description = a.Description };
                 a1.Values.AddRange(a.Values);
 

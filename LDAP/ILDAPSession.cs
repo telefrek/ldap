@@ -18,7 +18,7 @@ namespace Telefrek.LDAP
         /// <summary>
         /// Gets the currently bound object scope
         /// </summary>
-        string CurrentScope { get; }
+        LDAPObject CurrentScope { get; }
 
         /// <summary>
         /// Starts the session asynchronously

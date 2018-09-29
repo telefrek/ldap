@@ -7,6 +7,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Telefrek.LDAP.Protocol;
 using Telefrek.LDAP.Protocol.Encoding;
 
@@ -25,17 +26,20 @@ namespace Telefrek.LDAP.Protocol.IO
         LDAPConnectionState _state;
         int _messageId = 0;
         bool _sslEnabled;
+        ILogger _log;
 
         /// <summary>
         /// public constructor used to establish streams
         /// </summary>
         /// <param name="sslEnabled"></param>
-        public LDAPConnection(bool sslEnabled)
+        /// <param name="log"></param>
+        public LDAPConnection(bool sslEnabled, ILogger log)
         {
             _conn = new TcpClient();
             _sslEnabled = sslEnabled;
             _transport = null;
             _state = LDAPConnectionState.NotInitialized;
+            _log = log;
         }
 
         public LDAPConnectionState State => _state;
@@ -88,7 +92,7 @@ namespace Telefrek.LDAP.Protocol.IO
                 }
 
                 // Create the pump and start it
-                _pump = new MessagePump(Reader, _raw);
+                _pump = new MessagePump(Reader, _raw, _log);
                 _pump.Start();
                 _state = LDAPConnectionState.Connected;
             }

@@ -1,3 +1,4 @@
+using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,7 +8,7 @@ namespace Telefrek.LDAP.Managers
     /// <summary>
     /// Manages higher level user objects and does the translation to/from LDAP
     /// </summary>
-    public interface ILDAPUserManager
+    public interface ILDAPUserManager : IDisposable
     {
         /// <summary>
         /// Locates the user, if they exist and session has permissions

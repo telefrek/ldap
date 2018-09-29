@@ -15,6 +15,11 @@ namespace Telefrek.LDAP
         public static readonly LDAPFilter ALL_OBJECTS = new LDAPFilter();
 
         /// <summary>
+        /// Static filter for all cn
+        /// </summary>
+        public static readonly LDAPFilter ALL_CN = new LDAPFilter { Description = "cn" };
+
+        /// <summary>
         /// Gets the filter type
         /// </summary>
         public LDAPFilterType FilterType { get; set; } = LDAPFilterType.Present;
@@ -173,23 +178,23 @@ namespace Telefrek.LDAP
         /// <returns>A new filter, if the combination is valid</returns>
         public static LDAPFilter TryCombine(this LDAPFilter filter, LDAPFilter addition)
         {
-            if(filter == null)
+            if (filter == null)
                 throw new ArgumentNullException("filter was null");
-            if(addition == null)
+            if (addition == null)
                 throw new ArgumentNullException("addition was null");
 
             // Validate the filter type
-            if(filter.FilterType == LDAPFilterType.Substring && addition.FilterType == filter.FilterType)
+            if (filter.FilterType == LDAPFilterType.Substring && addition.FilterType == filter.FilterType)
             {
                 // Validate they both have substrings
-                if(filter.Substrings.Count > 0 && addition.Substrings.Count > 0)
+                if (filter.Substrings.Count > 0 && addition.Substrings.Count > 0)
                 {
-                    if(filter.Substrings.Count(s=>s.SubstringType == LDAPSubstringType.Initial) + 
-                        filter.Substrings.Count(s=>s.SubstringType == LDAPSubstringType.Initial) > 1)
+                    if (filter.Substrings.Count(s => s.SubstringType == LDAPSubstringType.Initial) +
+                        filter.Substrings.Count(s => s.SubstringType == LDAPSubstringType.Initial) > 1)
                         return null;
 
-                    if(filter.Substrings.Count(s=>s.SubstringType == LDAPSubstringType.Final) + 
-                        filter.Substrings.Count(s=>s.SubstringType == LDAPSubstringType.Final) > 1)
+                    if (filter.Substrings.Count(s => s.SubstringType == LDAPSubstringType.Final) +
+                        filter.Substrings.Count(s => s.SubstringType == LDAPSubstringType.Final) > 1)
                         return null;
 
                     var combined = new LDAPFilter
@@ -197,10 +202,10 @@ namespace Telefrek.LDAP
                         FilterType = LDAPFilterType.Substring
                     };
 
-                    foreach(var sub in filter.Substrings)
+                    foreach (var sub in filter.Substrings)
                         combined.Substrings.Add(sub);
 
-                    foreach(var sub in addition.Substrings)
+                    foreach (var sub in addition.Substrings)
                         combined.Substrings.Add(sub);
 
                     return combined;

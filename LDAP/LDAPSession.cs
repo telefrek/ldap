@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Telefrek.LDAP.Protocol;
 using Telefrek.LDAP.Protocol.IO;
@@ -19,18 +20,21 @@ namespace Telefrek.LDAP
         LDAPConfiguration _options;
         LDAPObject _current;
         LDAPSessionState _state;
+        ILogger<LDAPSession> _log;
 
         /// <summary>
         /// Default constructor
         /// </summary>
         /// <param name="options">Options for LDAP communication</param>
-        public LDAPSession(IOptions<LDAPConfiguration> options)
+        /// <param name="log"></param>
+        public LDAPSession(IOptions<LDAPConfiguration> options, ILogger<LDAPSession> log)
         {
             // Sessions start closed
             _state = LDAPSessionState.Closed;
 
             _options = options.Value;
-            _connection = new LDAPConnection(_options.IsSecured);
+            _connection = new LDAPConnection(_options.IsSecured, log);
+            _log = log;
         }
 
         /// <summary>
@@ -109,6 +113,7 @@ namespace Telefrek.LDAP
         /// <returns></returns>
         public async Task<LDAPResult> TrySearch(string dn, LDAPScope scope, LDAPAliasDereferencing aliasing, LDAPFilter filter, string[] attributes, CancellationToken token)
         {
+            _log.LogInformation("Searching for {0}", dn);
             var op = new SearchRequest { DistinguishedName = dn, Scope = scope, Aliasing = aliasing, Filter = filter, Attributes = attributes };
             var objList = new List<LDAPObject>();
             var result = new LDAPResult
@@ -119,10 +124,12 @@ namespace Telefrek.LDAP
 
             foreach (var msg in await _connection.TryQueueOperation(op, token))
             {
+                _log.LogInformation("Received {0}", msg.Operation);
                 switch (msg.Operation)
                 {
                     case ProtocolOp.SEARCH_RESPONSE:
                         var sResponse = msg as SearchResponse;
+                        _log.LogInformation("Found {0}", sResponse.DistinguishedName);
                         if (!string.IsNullOrWhiteSpace(sResponse.DistinguishedName))
                             objList.Add(new LDAPObject { DistinguishedName = sResponse.DistinguishedName, Attributes = new List<LDAPAttribute>(sResponse.Attributes) });
                         break;
@@ -131,7 +138,6 @@ namespace Telefrek.LDAP
                         result.ResultCode = (LDAPResultCode)sResult.ResultCode;
                         result.WasSuccessful = sResult.ResultCode == 0;
                         break;
-
                 }
             }
 

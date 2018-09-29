@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Telefrek.LDAP.Managers
@@ -15,16 +16,19 @@ namespace Telefrek.LDAP.Managers
     {
         ILDAPSession _session;
         LDAPManagerConfiguration _options;
+        ILogger<LDAPUserManager> _log;
 
         /// <summary>
         /// Default constructor
         /// </summary>
         /// <param name="options"></param>
         /// <param name="session">The session to use for the manager</param>
-        public LDAPUserManager(IOptions<LDAPManagerConfiguration> options, ILDAPSession session)
+        /// <param name="log">The logger to use for tracing information</param>
+        public LDAPUserManager(IOptions<LDAPManagerConfiguration> options, ILDAPSession session, ILogger<LDAPUserManager> log)
         {
             _options = options.Value;
             _session = session;
+            _log = log;
         }
 
         /// <summary>
@@ -39,6 +43,7 @@ namespace Telefrek.LDAP.Managers
         {
             await _session.StartAsync();
 
+            _log.LogInformation("Logging in for {0}@{1}", name, domain);
             if(await _session.TryBindAsync(name.AsDistinguishedName(domain), credentials, token))
             {
                 // Create the identity from the user info
@@ -49,6 +54,7 @@ namespace Telefrek.LDAP.Managers
                 // Return the initialized principal
                 return new ClaimsPrincipal(identity);
             }
+            _log.LogWarning("Failed to login with given credentials");
 
             return null;
         }
@@ -65,6 +71,17 @@ namespace Telefrek.LDAP.Managers
             // Ensure the session is started
             await _session.StartAsync();
 
+            // Ensure we are bound
+            if(_session.State != LDAPSessionState.Bound)
+            {
+                _log.LogInformation("Unbound session, trying to bind to administrator");
+
+                if(!await _session.TryBindAsync(_options.Administrator.AsDistinguishedName(_options.Domain), _options.Credentials, CancellationToken.None))
+                {
+                    return null;
+                }
+            }
+
             // Not entirely sure cn is the best way to go about it, but works for now
             var filter = new LDAPFilter { Description = "cn", Value = name, FilterType = LDAPFilterType.EqualityMatch };
             var res = await _session.TrySearch(name.AsDistinguishedName(domain), LDAPScope.EntireSubtree, LDAPAliasDereferencing.Always, filter, token);
@@ -77,5 +94,36 @@ namespace Telefrek.LDAP.Managers
 
             return null;
         }
+
+        /// <summary>
+        /// Dispose of the object resources
+        /// </summary>
+        public void Dispose() => Dispose(true);
+
+        bool _isDisposed = false;
+
+        void Dispose(bool disposing)
+        {
+            // Check state flags
+            if (disposing && !_isDisposed)
+            {
+                // Ensure we cleanup connection resources
+                if (_session != null)
+                    _session.Dispose();
+
+                _session = null;
+
+                // Notify GC to ignore
+                GC.SuppressFinalize(this);
+            }
+
+            _isDisposed = true;
+        }
+
+        /// <summary>
+        /// Destructor for releasing resources via GC callbacks
+        /// </summary>
+        /// <returns></returns>
+        ~LDAPUserManager() => Dispose(false);
     }
 }

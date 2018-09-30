@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+echo "Starting image"
+
+docker run --rm -p 10389:389 -p 10636:636 -e LDAP_TLS_VERIFY_CLIENT=try osixia/openldap

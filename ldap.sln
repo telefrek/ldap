@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LDAP", "LDAP\LDAP.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{FDE2CFF1-82DF-4BFF-B79C-624163B3A653}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Demo", "Demo\Demo.csproj", "{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,5 +46,17 @@ Global
 		{FDE2CFF1-82DF-4BFF-B79C-624163B3A653}.Release|x64.Build.0 = Release|Any CPU
 		{FDE2CFF1-82DF-4BFF-B79C-624163B3A653}.Release|x86.ActiveCfg = Release|Any CPU
 		{FDE2CFF1-82DF-4BFF-B79C-624163B3A653}.Release|x86.Build.0 = Release|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Debug|x64.Build.0 = Debug|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Debug|x86.Build.0 = Debug|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Release|x64.ActiveCfg = Release|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Release|x64.Build.0 = Release|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Release|x86.ActiveCfg = Release|Any CPU
+		{18E883D2-5422-4B9E-8F95-3F5C9B7DE1DC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

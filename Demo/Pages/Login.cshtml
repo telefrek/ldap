@@ -1,0 +1,52 @@
+@page
+@using Demo.Entities
+@model Demo.Models.LoginModel
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="form-group">
+        <label asp-for="LoginEntity.Username" class="col-md-2 control-label"></label>
+        <div class="col-md-10">
+            <input asp-for="LoginEntity.Username" class="form-control" />
+            <span asp-validation-for="LoginEntity.Username" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="LoginEntity.Domain" class="col-md-2 control-label"></label>
+        <div class="col-md-10">
+            <input asp-for="LoginEntity.Domain" class="form-control" />
+            <span asp-validation-for="LoginEntity.Domain" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="LoginEntity.Credentials" class="col-md-2 control-label"></label>
+        <div class="col-md-10">
+            <input asp-for="LoginEntity.Credentials" class="form-control" />
+            <span asp-validation-for="LoginEntity.Credentials" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-md-offset-2 col-md-10">
+            <div class="checkbox">
+                <label asp-for="LoginEntity.RememberMe">
+                    <input asp-for="LoginEntity.RememberMe" />
+                    @Html.DisplayNameFor(m => m.LoginEntity.RememberMe)
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-md-offset-2 col-md-10">
+            <button type="submit" class="btn btn-default">Log In</button>
+        </div>
+    </div>
+</form>

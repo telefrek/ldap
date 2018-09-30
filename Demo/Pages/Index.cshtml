@@ -1,0 +1,8 @@
+@page
+@model Demo.Models.IndexModel
+
+@{
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<h1>Hello @HttpContext.User.Identity.Name</h1>
